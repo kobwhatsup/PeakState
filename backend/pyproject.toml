@@ -1,0 +1,115 @@
+[tool.poetry]
+name = "peakstate-backend"
+version = "1.0.0"
+description = "PeakState AI精力管理教练 - 后端服务"
+authors = ["PeakState Team <dev@peakstate.com>"]
+readme = "README.md"
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+# Web框架
+fastapi = "^0.109.0"
+uvicorn = {extras = ["standard"], version = "^0.27.0"}
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+
+# 数据库
+sqlalchemy = "^2.0.25"
+alembic = "^1.13.1"
+psycopg2-binary = "^2.9.9"
+asyncpg = "^0.29.0"
+
+# Redis和缓存
+redis = "^5.0.1"
+aioredis = "^2.0.1"
+hiredis = "^2.3.2"
+
+# 异步任务
+celery = "^5.3.6"
+flower = "^2.0.1"
+
+# AI模型
+openai = "^1.10.0"
+anthropic = "^0.8.1"
+transformers = "^4.36.2"
+torch = "^2.1.2"
+sentence-transformers = "^2.3.1"
+
+# 向量数据库
+qdrant-client = "^1.7.3"
+
+# MCP相关
+mcp = {git = "https://github.com/anthropics/anthropic-sdk-python.git", subdirectory = "mcp"}
+
+# 安全和认证
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-multipart = "^0.0.6"
+cryptography = "^42.0.0"
+
+# HTTP客户端
+httpx = "^0.26.0"
+aiohttp = "^3.9.1"
+
+# 数据验证和序列化
+pydantic-extra-types = "^2.4.1"
+email-validator = "^2.1.0"
+
+# 工具和辅助
+python-dotenv = "^1.0.0"
+loguru = "^0.7.2"
+tenacity = "^8.2.3"
+pendulum = "^3.0.0"
+
+# 监控和追踪
+sentry-sdk = {extras = ["fastapi"], version = "^1.40.0"}
+prometheus-fastapi-instrumentator = "^6.1.0"
+
+# 云服务SDK
+oss2 = "^2.18.4"  # 阿里云OSS
+aliyun-python-sdk-core = "^2.14.0"
+
+# Apple/Google支付
+app-store-server-library = "^1.0.0"
+google-auth = "^2.27.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.4"
+pytest-asyncio = "^0.23.3"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.12.0"
+httpx = "^0.26.0"
+black = "^24.1.1"
+isort = "^5.13.2"
+flake8 = "^7.0.0"
+mypy = "^1.8.0"
+pre-commit = "^3.6.0"
+ipython = "^8.20.0"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

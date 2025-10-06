@@ -1,0 +1,133 @@
+version: '3.8'
+
+services:
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: peakstate-postgres
+    environment:
+      POSTGRES_DB: peakstate
+      POSTGRES_USER: peakstate_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-peakstate_dev_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U peakstate_user -d peakstate"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis缓存和消息队列
+  redis:
+    image: redis:7-alpine
+    container_name: peakstate-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-peakstate_dev_redis}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Qdrant向量数据库(用于RAG)
+  qdrant:
+    image: qdrant/qdrant:v1.7.4
+    container_name: peakstate-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:-peakstate_dev_qdrant}
+
+  # FastAPI后端
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: peakstate-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://peakstate_user:${POSTGRES_PASSWORD:-peakstate_dev_password}@postgres:5432/peakstate
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-peakstate_dev_redis}@redis:6379/0
+      - QDRANT_URL=http://qdrant:6333
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev_secret_key_change_in_production}
+    volumes:
+      - ./backend:/app
+      - ai_models:/app/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Celery Worker (异步任务处理)
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: peakstate-celery-worker
+    environment:
+      - DATABASE_URL=postgresql://peakstate_user:${POSTGRES_PASSWORD:-peakstate_dev_password}@postgres:5432/peakstate
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-peakstate_dev_redis}@redis:6379/0
+      - QDRANT_URL=http://qdrant:6333
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - ./backend:/app
+      - ai_models:/app/models
+    depends_on:
+      - redis
+      - postgres
+    command: celery -A app.tasks.celery_app worker --loglevel=info
+
+  # Flower (Celery监控)
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: peakstate-flower
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-peakstate_dev_redis}@redis:6379/0
+    depends_on:
+      - redis
+      - celery_worker
+    command: celery -A app.tasks.celery_app flower --port=5555
+
+  # Nginx反向代理(生产环境)
+  nginx:
+    image: nginx:alpine
+    container_name: peakstate-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./infrastructure/docker/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+  ai_models:
+
+networks:
+  default:
+    name: peakstate_network

@@ -16,9 +16,9 @@ from app.core.config import settings
 class AIProvider(str, Enum):
     """AI提供商枚举"""
     LOCAL_PHI = "phi-3.5"
-    OPENAI_GPT4O = "gpt-4o"
-    OPENAI_GPT4O_MINI = "gpt-4o-mini"
-    CLAUDE_35_SONNET = "claude-3-5-sonnet"
+    OPENAI_GPT5 = "gpt-5"  # GPT-5 旗舰模型
+    OPENAI_GPT5_NANO = "gpt-5-nano-2025-08-07"  # GPT-5 Nano 最新版本
+    CLAUDE_SONNET_4 = "claude-sonnet-4-20250514"  # Claude Sonnet 4 最新版本
 
 
 class IntentType(str, Enum):
@@ -73,20 +73,20 @@ class AIOrchestrator:
         self.openai_client = None
         self.anthropic_client = None
 
-        # 成本配置(每1K tokens)
+        # 成本配置(每1K tokens) - 基于2025年最新定价
         self.cost_config = {
             AIProvider.LOCAL_PHI: 0.0,
-            AIProvider.OPENAI_GPT4O_MINI: 0.00015,  # $0.15/1M tokens
-            AIProvider.OPENAI_GPT4O: 0.0025,  # $2.5/1M tokens
-            AIProvider.CLAUDE_35_SONNET: 0.003,  # $3/1M tokens
+            AIProvider.OPENAI_GPT5_NANO: 0.0002,  # $0.2/1M tokens (超经济)
+            AIProvider.OPENAI_GPT5: 0.005,  # $5/1M tokens (旗舰级)
+            AIProvider.CLAUDE_SONNET_4: 0.003,  # $3/1M tokens
         }
 
         # 延迟配置(秒)
         self.latency_config = {
             AIProvider.LOCAL_PHI: 0.05,  # 50ms
-            AIProvider.OPENAI_GPT4O_MINI: 1.5,
-            AIProvider.OPENAI_GPT4O: 2.0,
-            AIProvider.CLAUDE_35_SONNET: 1.8,
+            AIProvider.OPENAI_GPT5_NANO: 0.8,  # 超快速响应
+            AIProvider.OPENAI_GPT5: 2.0,
+            AIProvider.CLAUDE_SONNET_4: 1.5,
         }
 
         logger.info("🤖 AI Orchestrator initialized")
@@ -266,8 +266,8 @@ class AIOrchestrator:
         reason: str
 
         if not settings.AI_COST_OPTIMIZATION:
-            # 不启用成本优化: 全部使用GPT-4o
-            provider = AIProvider.OPENAI_GPT4O
+            # 不启用成本优化: 全部使用GPT-5旗舰
+            provider = AIProvider.OPENAI_GPT5
             reason = "成本优化未启用,使用最强模型"
 
         elif complexity < settings.AI_ROUTE_LOCAL_THRESHOLD:
@@ -276,19 +276,19 @@ class AIOrchestrator:
             reason = f"低复杂度({complexity}),使用本地模型"
 
         elif complexity < settings.AI_ROUTE_MINI_THRESHOLD:
-            # 中等复杂度: 使用GPT-4o-mini
-            provider = AIProvider.OPENAI_GPT4O_MINI
-            reason = f"中等复杂度({complexity}),使用mini模型"
+            # 中等复杂度: 使用GPT-5 Nano(超快速、超经济)
+            provider = AIProvider.OPENAI_GPT5_NANO
+            reason = f"中等复杂度({complexity}),使用GPT-5 Nano"
 
         elif intent.requires_empathy:
-            # 需要情感理解: 使用Claude(情感能力更强)
-            provider = AIProvider.CLAUDE_35_SONNET
-            reason = f"需要情感理解,使用Claude"
+            # 需要情感理解: 使用Claude Sonnet 4(情感能力最强)
+            provider = AIProvider.CLAUDE_SONNET_4
+            reason = f"需要情感理解,使用Claude Sonnet 4"
 
         else:
-            # 高复杂度: 使用GPT-4o
-            provider = AIProvider.OPENAI_GPT4O
-            reason = f"高复杂度({complexity}),使用GPT-4o"
+            # 高复杂度: 使用GPT-5旗舰
+            provider = AIProvider.OPENAI_GPT5
+            reason = f"高复杂度({complexity}),使用GPT-5"
 
         # 计算预估成本和延迟
         estimated_tokens = max(len(user_message) / 4, 100)  # 粗略估算
@@ -355,11 +355,11 @@ class AIOrchestrator:
             content = await self._generate_local(messages, system_prompt, max_tokens)
             return AIResponse(content=content, tokens_used=None)
 
-        elif provider in [AIProvider.OPENAI_GPT4O, AIProvider.OPENAI_GPT4O_MINI]:
+        elif provider in [AIProvider.OPENAI_GPT5, AIProvider.OPENAI_GPT5_NANO]:
             content, tokens = await self._generate_openai(provider, messages, system_prompt, max_tokens, temperature)
             return AIResponse(content=content, tokens_used=tokens)
 
-        elif provider == AIProvider.CLAUDE_35_SONNET:
+        elif provider == AIProvider.CLAUDE_SONNET_4:
             content, tokens = await self._generate_claude(messages, system_prompt, max_tokens, temperature, tools)
             return AIResponse(content=content, tokens_used=tokens)
 
@@ -389,7 +389,7 @@ class AIOrchestrator:
         if not self.openai_client:
             raise RuntimeError("OpenAI client not initialized")
 
-        model = settings.OPENAI_MODEL_MAIN if provider == AIProvider.OPENAI_GPT4O else settings.OPENAI_MODEL_MINI
+        model = settings.OPENAI_MODEL_MAIN if provider == AIProvider.OPENAI_GPT5 else settings.OPENAI_MODEL_MINI
 
         # 添加系统提示
         full_messages = []

@@ -20,7 +20,7 @@ async def test_openai():
         client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
         response = await client.chat.completions.create(
-            model="gpt-5-nano",
+            model="gpt-5-nano-2025-08-07",  # 使用最新版本号
             messages=[
                 {"role": "user", "content": "请用一句话介绍你自己"}
             ],

@@ -63,13 +63,13 @@ class Settings(BaseSettings):
     # OpenAI - 使用最新GPT-5系列
     OPENAI_API_KEY: str = Field(default="", description="OpenAI API密钥")
     OPENAI_MODEL_MAIN: str = "gpt-5"  # GPT-5 旗舰模型
-    OPENAI_MODEL_MINI: str = "gpt-5-nano"  # GPT-5 nano 最快速、最经济
+    OPENAI_MODEL_MINI: str = "gpt-5-nano-2025-08-07"  # GPT-5 nano 最新版本 (2025-08-07)
     OPENAI_MAX_TOKENS: int = 2000
     OPENAI_TEMPERATURE: float = 0.7
 
     # Anthropic Claude - 使用最新Sonnet 4系列
     ANTHROPIC_API_KEY: str = Field(default="", description="Anthropic API密钥")
-    ANTHROPIC_MODEL: str = "claude-sonnet-4-20250514"  # Claude Sonnet 4 (2025-05-14)
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-20250514"  # Claude Sonnet 4 最新版本 (2025-05-14)
     ANTHROPIC_MAX_TOKENS: int = 8000  # Claude Sonnet 4支持更大输出
 
     # 本地模型

@@ -9,10 +9,40 @@ from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
-# 将postgresql://转换为postgresql+asyncpg://
-ASYNC_DATABASE_URL = settings.DATABASE_URL.replace(
-    "postgresql://", "postgresql+asyncpg://"
-)
+# 将postgresql://转换为postgresql+asyncpg://并提取SSL参数
+database_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+
+# 提取SSL参数（如果存在）
+import ssl as ssl_module
+connect_args = {}
+
+if "?" in database_url:
+    base_url, params = database_url.split("?", 1)
+    param_dict = dict(param.split("=") for param in params.split("&"))
+
+    # 处理SSL参数
+    if "sslmode" in param_dict:
+        sslmode = param_dict.pop("sslmode")
+        if sslmode in ("verify-ca", "verify-full", "require"):
+            # asyncpg使用ssl_context而不是sslmode
+            ssl_context = ssl_module.create_default_context()
+
+            # 对于require模式，不验证主机名
+            if sslmode == "require":
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl_module.CERT_NONE
+
+            if "sslrootcert" in param_dict:
+                ssl_context.load_verify_locations(param_dict.pop("sslrootcert"))
+            connect_args["ssl"] = ssl_context
+
+    # 重建URL（去除SSL参数）
+    if param_dict:
+        ASYNC_DATABASE_URL = base_url + "?" + "&".join(f"{k}={v}" for k, v in param_dict.items())
+    else:
+        ASYNC_DATABASE_URL = base_url
+else:
+    ASYNC_DATABASE_URL = database_url
 
 # 创建异步引擎
 if settings.is_development:
@@ -21,11 +51,13 @@ if settings.is_development:
         ASYNC_DATABASE_URL,
         poolclass=NullPool,
         echo=settings.SQL_ECHO,
+        connect_args=connect_args,
     )
 else:
     # 生产环境: 使用连接池
     engine = create_async_engine(
         ASYNC_DATABASE_URL,
+        connect_args=connect_args,
         **settings.database_pool_config,
     )
 

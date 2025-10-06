@@ -75,8 +75,7 @@ async def register(
         expires_delta=timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     refresh_token = create_refresh_token(
-        data={"sub": str(user.id)},
-        expires_delta=timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
+        data={"sub": str(user.id)}
     )
 
     return Token(
@@ -136,8 +135,7 @@ async def login(
         expires_delta=timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     refresh_token = create_refresh_token(
-        data={"sub": str(user.id)},
-        expires_delta=timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
+        data={"sub": str(user.id)}
     )
 
     return Token(

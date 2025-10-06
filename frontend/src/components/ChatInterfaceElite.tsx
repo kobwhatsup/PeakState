@@ -4,92 +4,80 @@ import { Send, Zap, Battery, TrendingUp, ArrowLeft } from "lucide-react";
 import { CoachAvatarElite } from "./CoachAvatarElite";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-
-interface Message {
-  id: string;
-  type: "user" | "coach";
-  content: string;
-  timestamp: Date;
-  insight?: {
-    type: "energy" | "analysis";
-    title: string;
-    data?: { label: string; value: number; color: string }[];
-  };
-}
+import { useChatStore } from "../store/chatStore";
+import { useAuthStore } from "../store/authStore";
+import type { CoachType } from "../api";
 
 interface ChatInterfaceEliteProps {
-  coachType: "wise" | "companion" | "expert";
+  coachType: CoachType;
   onStartFocus?: () => void;
 }
 
 export function ChatInterfaceElite({ coachType, onStartFocus }: ChatInterfaceEliteProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      type: "coach",
-      content: "欢迎回来！让我们一起查看您今天的精力状态。",
-      timestamp: new Date(Date.now() - 3600000),
-    },
-    {
-      id: "2",
-      type: "coach",
-      content: "这是您当前的能量分布情况：",
-      timestamp: new Date(Date.now() - 3500000),
-      insight: {
-        type: "energy",
-        title: "Energy Level",
-        data: [
-          { label: "Physical Energy", value: 30, color: "#4DD0E1" },
-          { label: "Mental Energy", value: 20, color: "#80DEEA" },
-          { label: "Emotional Energy", value: 45, color: "#5B9FDB" },
-          { label: "Spiritual Energy", value: 20, color: "#B0BEC5" }
-        ]
-      }
-    }
-  ]);
+  const {
+    messages,
+    currentConversationId,
+    isSending,
+    sendMessage,
+    createConversation,
+    loadConversations,
+  } = useChatStore();
 
+  const { user } = useAuthStore();
   const [inputValue, setInputValue] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 初始化：加载对话列表
+  useEffect(() => {
+    const initChat = async () => {
+      try {
+        console.log("ChatInterface init - loading conversations");
+        await loadConversations();
+        console.log("Conversations loaded");
+      } catch (error) {
+        console.error("Failed to load conversations:", error);
+      }
+    };
+    initChat();
+  }, [loadConversations]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
-    
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      type: "user",
-      content: inputValue,
-      timestamp: new Date()
-    };
-    
-    setMessages([...messages, newMessage]);
-    setInputValue("");
-    setIsTyping(true);
+  const handleSend = async () => {
+    if (!inputValue.trim() || isSending) return;
 
-    setTimeout(() => {
-      setIsTyping(false);
-      const coachReply: Message = {
-        id: (Date.now() + 1).toString(),
-        type: "coach",
-        content: "我正在分析您的数据，稍后将为您提供个性化建议。",
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, coachReply]);
-    }, 2000);
+    const content = inputValue;
+    setInputValue("");
+
+    try {
+      // 如果没有当前对话，先创建一个
+      if (!currentConversationId) {
+        console.log("No current conversation, creating one...");
+        const conversationId = await createConversation(coachType, "新对话");
+        console.log("Conversation created with ID:", conversationId);
+      }
+
+      console.log("Sending message to conversation:", currentConversationId);
+      await sendMessage(content);
+      console.log("Message sent successfully");
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      // 如果发送失败，恢复输入内容
+      setInputValue(content);
+    }
   };
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const coachNames = {
-    wise: "能量教练",
-    companion: "活力伙伴",
-    expert: "效能顾问"
+  const coachNames: Record<CoachType, string> = {
+    mentor: "智慧导师",
+    coach: "能量教练",
+    doctor: "健康医生",
+    zen: "禅意大师"
   };
 
   return (
@@ -160,23 +148,23 @@ export function ChatInterfaceElite({ coachType, onStartFocus }: ChatInterfaceEli
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className={`flex gap-4 ${message.type === "user" ? "flex-row-reverse" : "flex-row"} items-start`}
+            className={`flex gap-4 ${message.role === "user" ? "flex-row-reverse" : "flex-row"} items-start`}
           >
-            {message.type === "coach" && <CoachAvatarElite type={coachType} size="sm" />}
-            
-            <div className={`max-w-[70%] ${message.type === "user" ? "items-end" : "items-start"} flex flex-col`}>
+            {message.role === "assistant" && <CoachAvatarElite type={coachType} size="sm" />}
+
+            <div className={`max-w-[70%] ${message.role === "user" ? "items-end" : "items-start"} flex flex-col`}>
               {/* 消息卡片 */}
               <div
                 className={`rounded-3xl p-6 backdrop-blur-xl ${
-                  message.type === "user"
+                  message.role === "user"
                     ? "bg-white/20 text-white shadow-lg shadow-black/10 border border-white/30"
                     : "bg-white/95 border border-white/50 text-[#2B69B6] shadow-lg shadow-black/5"
                 }`}
               >
                 <p className="leading-relaxed">{message.content}</p>
-                
-                {/* 能量级别卡片 */}
-                {message.insight && message.insight.type === "energy" && (
+
+                {/* 能量级别卡片 - 暂时移除，后续从metadata解析 */}
+                {message.metadata?.insight && message.metadata.insight.type === "energy" && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
@@ -194,11 +182,11 @@ export function ChatInterfaceElite({ coachType, onStartFocus }: ChatInterfaceEli
                           stroke="#E8F4F8"
                           strokeWidth="16"
                         />
-                        {message.insight.data?.map((item, idx) => {
-                          const total = message.insight?.data?.reduce((sum, d) => sum + d.value, 0) || 100;
+                        {message.metadata?.insight.data?.map((item, idx) => {
+                          const total = message.metadata?.insight?.data?.reduce((sum, d) => sum + d.value, 0) || 100;
                           const percentage = (item.value / total) * 100;
                           const circumference = 2 * Math.PI * 80;
-                          const previousPercentages = message.insight?.data?.slice(0, idx).reduce((sum, d) => sum + (d.value / total) * 100, 0) || 0;
+                          const previousPercentages = message.metadata?.insight?.data?.slice(0, idx).reduce((sum, d) => sum + (d.value / total) * 100, 0) || 0;
                           const offset = circumference - (circumference * previousPercentages / 100);
                           const dashArray = (circumference * percentage / 100);
                           
@@ -225,7 +213,7 @@ export function ChatInterfaceElite({ coachType, onStartFocus }: ChatInterfaceEli
 
                     {/* 能量指标列表 */}
                     <div className="space-y-5">
-                      {message.insight.data?.map((item, idx) => (
+                      {message.metadata?.insight.data?.map((item, idx) => (
                         <div key={idx} className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-[#2B69B6]">{item.label}</span>
@@ -258,13 +246,13 @@ export function ChatInterfaceElite({ coachType, onStartFocus }: ChatInterfaceEli
                   </motion.div>
                 )}
               </div>
-              
+
               <p className="text-white/60 text-sm mt-3 px-5">
-                {formatTime(message.timestamp)}
+                {formatTime(new Date(message.timestamp))}
               </p>
             </div>
 
-            {message.type === "user" && (
+            {message.role === "user" && (
               <div 
                 className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white"
                 style={{
@@ -279,7 +267,7 @@ export function ChatInterfaceElite({ coachType, onStartFocus }: ChatInterfaceEli
         ))}
 
         {/* 打字中指示器 */}
-        {isTyping && (
+        {isSending && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

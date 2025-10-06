@@ -55,8 +55,9 @@ class User(Base):
 
     # 用户配置
     coach_selection: Mapped[str] = mapped_column(
-        String(20),
-        default="companion",  # 默认伙伴型
+        SQLEnum("mentor", "coach", "doctor", "zen", name="coach_type", create_type=False),
+        default="coach",
+        server_default="coach",
         nullable=False,
         comment="AI教练类型选择"
     )
@@ -174,7 +175,7 @@ class User(Base):
         "HealthData",
         back_populates="user",
         cascade="all, delete-orphan",
-        lazy="selectin"
+        lazy="noload"  # 不自动加载，避免模型不一致问题
     )
 
     def __repr__(self) -> str:

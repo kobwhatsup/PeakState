@@ -2,13 +2,22 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Activity, Users, TrendingUp, CheckCircle } from "lucide-react";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { useAuthStore } from "../store/authStore";
+import type { CoachType } from "../api";
 
 interface OnboardingEliteProps {
-  onComplete: (coachType: "wise" | "companion" | "expert") => void;
+  onComplete: (coachType: CoachType) => void;
 }
 
 export function OnboardingElite({ onComplete }: OnboardingEliteProps) {
   const [currentScreen, setCurrentScreen] = useState(0);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [selectedCoach, setSelectedCoach] = useState<CoachType>("coach");
+
+  const { register, isLoading, error } = useAuthStore();
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
@@ -204,12 +213,93 @@ export function OnboardingElite({ onComplete }: OnboardingEliteProps) {
               开始您的精力管理之旅
             </p>
 
-            <Button
-              onClick={() => onComplete("wise")}
-              className="bg-white/90 hover:bg-white text-[#2B69B6] px-12 py-7 rounded-2xl shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/15 transition-all duration-300"
-            >
-              立即开始
-            </Button>
+            {/* 注册表单 */}
+            <div className="w-full max-w-sm space-y-6">
+              <div className="space-y-4">
+                <Input
+                  type="tel"
+                  placeholder="手机号码"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="bg-white/15 backdrop-blur-xl border-white/30 focus:border-white/50 text-white placeholder:text-white/60 rounded-2xl px-6 py-6"
+                />
+                <Input
+                  type="password"
+                  placeholder="设置密码"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-white/15 backdrop-blur-xl border-white/30 focus:border-white/50 text-white placeholder:text-white/60 rounded-2xl px-6 py-6"
+                />
+                <Input
+                  type="password"
+                  placeholder="确认密码"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="bg-white/15 backdrop-blur-xl border-white/30 focus:border-white/50 text-white placeholder:text-white/60 rounded-2xl px-6 py-6"
+                />
+              </div>
+
+              {/* 选择教练类型 */}
+              <div className="space-y-3">
+                <p className="text-white/80 text-sm text-center">选择您的AI教练</p>
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    { type: "mentor" as CoachType, label: "导师" },
+                    { type: "coach" as CoachType, label: "教练" },
+                    { type: "doctor" as CoachType, label: "医生" },
+                    { type: "zen" as CoachType, label: "禅师" },
+                  ].map((coach) => (
+                    <button
+                      key={coach.type}
+                      type="button"
+                      onClick={() => setSelectedCoach(coach.type)}
+                      className={`rounded-2xl p-4 transition-all duration-300 hover:scale-105 ${
+                        selectedCoach === coach.type
+                          ? "bg-white/30 border-2 border-white/60"
+                          : "bg-white/15 border-2 border-white/20 hover:bg-white/20"
+                      }`}
+                    >
+                      <span className="text-white text-sm font-medium">{coach.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {error && (
+                <p className="text-red-300 text-sm text-center">{error}</p>
+              )}
+
+              <Button
+                onClick={async () => {
+                  if (!phoneNumber || !password || !confirmPassword) {
+                    return;
+                  }
+                  if (password !== confirmPassword) {
+                    return;
+                  }
+                  try {
+                    await register({
+                      phone_number: phoneNumber,
+                      password,
+                      coach_selection: selectedCoach,
+                    });
+                    onComplete(selectedCoach);
+                  } catch (err) {
+                    console.error("Registration failed:", err);
+                  }
+                }}
+                disabled={
+                  isLoading ||
+                  !phoneNumber ||
+                  !password ||
+                  !confirmPassword ||
+                  password !== confirmPassword
+                }
+                className="w-full bg-white/90 hover:bg-white text-[#2B69B6] px-12 py-7 rounded-2xl shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/15 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "注册中..." : "立即开始"}
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

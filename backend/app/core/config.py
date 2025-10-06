@@ -12,10 +12,14 @@ class Settings(BaseSettings):
     """应用配置"""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # 环境变量优先级: 系统环境变量 > .env文件 > 默认值
+        # 这样可以在生产环境用系统变量覆盖.env配置
+        env_file="../.env",  # 相对于backend/目录
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore"
+        extra="ignore",
+        # 验证配置值,防止意外使用占位符
+        validate_default=True
     )
 
     # ============ 应用基础配置 ============

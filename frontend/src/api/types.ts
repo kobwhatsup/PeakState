@@ -14,7 +14,7 @@ export interface ApiResponse<T = any> {
 
 // ========== 用户相关 ==========
 
-export type CoachType = "mentor" | "coach" | "doctor" | "zen";
+export type CoachType = "sage" | "companion" | "expert";
 
 export interface User {
   id: string;

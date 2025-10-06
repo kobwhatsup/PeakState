@@ -10,7 +10,7 @@ type AppState = "onboarding" | "chat" | "focus";
 export default function App() {
   const { isAuthenticated, user, fetchCurrentUser } = useAuthStore();
   const [appState, setAppState] = useState<AppState>("onboarding");
-  const [selectedCoach, setSelectedCoach] = useState<CoachType>("coach");
+  const [selectedCoach, setSelectedCoach] = useState<CoachType>("companion");
   const [isLoading, setIsLoading] = useState(true);
 
   // 应用启动时检查登录状态

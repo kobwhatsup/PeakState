@@ -15,6 +15,16 @@
 
 ---
 
+## ⚠️ **重要安全提醒**
+
+**🔒 NEVER commit API keys or secrets to Git!**
+
+- 本项目包含 pre-commit hook 防止密钥泄露
+- 始终使用 `.env` 存储敏感配置(已在 `.gitignore` 中)
+- 详细安全指南: [SECURITY.md](SECURITY.md)
+
+---
+
 ## 📖 项目概述
 
 PeakState是一款基于AI的个性化精力管理应用,提供7×24小时在线的私人AI教练服务。通过整合生理数据、行为数据和主观感受,运用先进的AI技术进行深度分析,帮助用户优化精力分配,保持巅峰状态。

@@ -23,12 +23,7 @@ def upgrade() -> None:
     创建所有初始表
     """
     # 创建coach_type枚举
-    coach_type_enum = postgresql.ENUM(
-        'mentor', 'coach', 'doctor', 'zen',
-        name='coach_type',
-        create_type=True
-    )
-    coach_type_enum.create(op.get_bind(), checkfirst=True)
+    op.execute("CREATE TYPE coach_type AS ENUM ('mentor', 'coach', 'doctor', 'zen')")
 
     # 创建users表
     op.create_table(
@@ -36,7 +31,7 @@ def upgrade() -> None:
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('phone_number', sa.String(20), unique=True, nullable=False, comment='手机号(登录凭证)'),
         sa.Column('hashed_password', sa.String(255), nullable=False, comment='bcrypt加密密码'),
-        sa.Column('coach_selection', coach_type_enum, nullable=False, server_default='coach', comment='AI教练类型选择'),
+        sa.Column('coach_selection', postgresql.ENUM('mentor', 'coach', 'doctor', 'zen', name='coach_type', create_type=False), nullable=False, server_default='coach', comment='AI教练类型选择'),
         sa.Column('timezone', sa.String(50), nullable=False, server_default='Asia/Shanghai', comment='用户时区'),
 
         # 订阅状态

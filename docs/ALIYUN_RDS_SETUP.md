@@ -130,7 +130,7 @@
 ```
 实例详情页 → "基本信息" → "连接信息"
 
-内网地址: rm-xxxxxxxxxxxxx.pg.rds.aliyuncs.com
+内网地址: pgm-2zenr70bu8bp2xgy.pg.rds.aliyuncs.com
 内网端口: 5432
 ```
 

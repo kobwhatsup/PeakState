@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         # 环境变量优先级: 系统环境变量 > .env文件 > 默认值
         # 这样可以在生产环境用系统变量覆盖.env配置
-        env_file="../.env",  # 相对于backend/目录
+        env_file=".env",  # backend目录下的.env
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",

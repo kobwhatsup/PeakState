@@ -128,6 +128,33 @@ detect-secrets scan > .secrets.baseline
 
 ---
 
+## 🔐 Database SSL Configuration
+
+### Aliyun RDS PostgreSQL with SSL
+
+**Configuration** (已启用):
+```bash
+# backend/.env
+DATABASE_URL=postgresql://user:password@host:5432/db?sslmode=verify-ca&sslrootcert=ssl/ApsaraDB-CA-Chain.pem
+```
+
+**SSL Modes**:
+- `disable` - 不使用SSL (不推荐)
+- `require` - 需要SSL但不验证证书
+- `verify-ca` - 验证CA证书 (✅ 当前配置)
+- `verify-full` - 完整验证 (最安全)
+
+**CA证书位置**: `backend/ssl/ApsaraDB-CA-Chain.pem`
+
+**验证SSL状态**:
+```bash
+cd backend
+source venv/bin/activate
+python test_rds_sqlalchemy.py
+```
+
+---
+
 ## 📊 Security Checklist
 
 Before every commit:
@@ -137,6 +164,7 @@ Before every commit:
 - [ ] Pre-commit hook passes
 - [ ] No hardcoded passwords
 - [ ] No sensitive data in comments
+- [ ] SSL certificates (`.pem`, `.crt`) not committed
 
 Before pushing to GitHub:
 

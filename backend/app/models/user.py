@@ -55,9 +55,9 @@ class User(Base):
 
     # 用户配置
     coach_selection: Mapped[str] = mapped_column(
-        SQLEnum("mentor", "coach", "doctor", "zen", name="coach_type", create_type=False),
-        default="coach",
-        server_default="coach",
+        SQLEnum("mentor", "coach", "doctor", "zen", "sage", "companion", "expert", name="coach_type", create_type=False),
+        default="companion",
+        server_default="companion",
         nullable=False,
         comment="AI教练类型选择"
     )

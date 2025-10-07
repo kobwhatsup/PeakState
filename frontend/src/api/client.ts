@@ -115,7 +115,7 @@ apiClient.interceptors.response.use(
       try {
         // 调用refresh token接口
         const response = await axios.post(
-          `${API_BASE_URL}/api/v1/auth/auth/refresh`,
+          `${API_BASE_URL}/api/v1/auth/refresh`,
           { refresh_token: refreshToken }
         );
 

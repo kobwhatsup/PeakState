@@ -14,7 +14,7 @@ import type {
 // ========== 用户注册 ==========
 
 export const register = async (data: RegisterRequest): Promise<Token> => {
-  const response = await apiClient.post<Token>("/auth/auth/register", data);
+  const response = await apiClient.post<Token>("/auth/register", data);
 
   // 自动保存token
   if (response.data.access_token && response.data.refresh_token) {
@@ -30,7 +30,7 @@ export const register = async (data: RegisterRequest): Promise<Token> => {
 // ========== 用户登录 ==========
 
 export const login = async (data: LoginRequest): Promise<Token> => {
-  const response = await apiClient.post<Token>("/auth/auth/login", data);
+  const response = await apiClient.post<Token>("/auth/login", data);
 
   // 自动保存token
   if (response.data.access_token && response.data.refresh_token) {
@@ -56,14 +56,14 @@ export const logout = async (): Promise<void> => {
 // ========== 获取当前用户信息 ==========
 
 export const getCurrentUser = async (): Promise<User> => {
-  const response = await apiClient.get<User>("/auth/auth/me");
+  const response = await apiClient.get<User>("/auth/me");
   return response.data;
 };
 
 // ========== 刷新令牌 ==========
 
 export const refreshToken = async (refresh_token: string): Promise<Token> => {
-  const response = await apiClient.post<Token>("/auth/auth/refresh", {
+  const response = await apiClient.post<Token>("/auth/refresh", {
     refresh_token,
   });
 

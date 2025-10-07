@@ -26,6 +26,16 @@ export {
   debugRouting,
 } from "./chat";
 
+// 健康数据接口
+export {
+  createHealthData,
+  createHealthDataBatch,
+  getHealthDataByType,
+  getLatestHealthData,
+  getHealthSummary,
+  deleteHealthData,
+} from "./health";
+
 // 类型定义
 export type {
   ApiResponse,
@@ -40,4 +50,11 @@ export type {
   SendMessageResponse,
   CreateConversationRequest,
   HealthData,
+  HealthDataCreate,
+  HealthDataBatchCreate,
+  HealthDataResponse,
+  HealthDataListResponse,
+  HealthSummaryResponse,
 } from "./types";
+
+export { HealthDataType, HealthDataSource } from "./types";

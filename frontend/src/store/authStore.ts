@@ -48,11 +48,29 @@ export const useAuthStore = create<AuthState>()(
           await get().fetchCurrentUser();
           set({ isAuthenticated: true });
         } catch (error: any) {
-          const errorMessage =
-            error.response?.data?.detail ||
-            error.response?.data?.message ||
-            error.message ||
-            "注册失败";
+          // 错误信息映射为中文
+          let errorMessage = "注册失败";
+
+          const detail = error.response?.data?.detail || error.response?.data?.message || error.message;
+
+          if (detail) {
+            // 映射常见错误信息
+            if (detail.includes("Phone number already registered") || detail.includes("already registered")) {
+              errorMessage = "该手机号已注册，请直接登录或使用其他手机号";
+            } else if (detail.includes("Not Found") || detail.includes("404")) {
+              errorMessage = "注册服务暂时不可用，请稍后再试";
+            } else if (detail.includes("Network Error") || detail.includes("timeout")) {
+              errorMessage = "网络连接失败，请检查网络后重试";
+            } else if (detail.includes("Invalid phone number")) {
+              errorMessage = "手机号格式不正确";
+            } else if (detail.includes("Password")) {
+              errorMessage = "密码格式不符合要求";
+            } else {
+              // 其他错误保留原始信息
+              errorMessage = detail;
+            }
+          }
+
           set({ error: errorMessage, isAuthenticated: false });
           throw error;
         } finally {
@@ -69,11 +87,27 @@ export const useAuthStore = create<AuthState>()(
           await get().fetchCurrentUser();
           set({ isAuthenticated: true });
         } catch (error: any) {
-          const errorMessage =
-            error.response?.data?.detail ||
-            error.response?.data?.message ||
-            error.message ||
-            "登录失败";
+          // 错误信息映射为中文
+          let errorMessage = "登录失败";
+
+          const detail = error.response?.data?.detail || error.response?.data?.message || error.message;
+
+          if (detail) {
+            // 映射常见错误信息
+            if (detail.includes("Invalid credentials") || detail.includes("Incorrect")) {
+              errorMessage = "手机号或密码错误";
+            } else if (detail.includes("User not found") || detail.includes("not found")) {
+              errorMessage = "该手机号未注册，请先注册";
+            } else if (detail.includes("Not Found") || detail.includes("404")) {
+              errorMessage = "登录服务暂时不可用，请稍后再试";
+            } else if (detail.includes("Network Error") || detail.includes("timeout")) {
+              errorMessage = "网络连接失败，请检查网络后重试";
+            } else {
+              // 其他错误保留原始信息
+              errorMessage = detail;
+            }
+          }
+
           set({ error: errorMessage, isAuthenticated: false });
           throw error;
         } finally {
@@ -161,8 +195,3 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
-
-// 自动初始化：应用启动时尝试获取用户信息
-if (apiIsAuthenticated()) {
-  useAuthStore.getState().fetchCurrentUser();
-}

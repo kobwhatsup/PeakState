@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { Send, Zap, Battery, TrendingUp, ArrowLeft } from "lucide-react";
 import { CoachAvatarElite } from "./CoachAvatarElite";
+import { QuickHealthEntry } from "./QuickHealthEntry";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useChatStore } from "../store/chatStore";
@@ -11,9 +12,10 @@ import type { CoachType } from "../api";
 interface ChatInterfaceEliteProps {
   coachType: CoachType;
   onStartFocus?: () => void;
+  onOpenHealth?: () => void;
 }
 
-export function ChatInterfaceElite({ coachType, onStartFocus }: ChatInterfaceEliteProps) {
+export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: ChatInterfaceEliteProps) {
   const {
     messages,
     currentConversationId,
@@ -106,42 +108,43 @@ export function ChatInterfaceElite({ coachType, onStartFocus }: ChatInterfaceEli
       </div>
 
       {/* Header */}
-      <motion.div 
+      <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="relative bg-white/10 backdrop-blur-xl border-b border-white/20 p-6"
+        className="relative bg-white/10 backdrop-blur-xl border-b border-white/20 p-4 sm:p-5 lg:p-6"
       >
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-3 sm:gap-4 lg:gap-5">
           <Button
             variant="ghost"
             size="icon"
-            className="text-white hover:bg-white/10 rounded-full"
+            className="text-white hover:bg-white/10 rounded-full touch-target"
           >
             <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
           </Button>
-          
+
           <CoachAvatarElite type={coachType} size="md" isActive />
-          
-          <div className="flex-1">
-            <h3 className="text-white mb-1">{coachNames[coachType]}</h3>
+
+          <div className="flex-1 min-w-0">
+            <h3 className="text-white mb-1 text-sm sm:text-base truncate">{coachNames[coachType]}</h3>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-[#4DD0E1]" />
-              <p className="text-white/80 text-sm">在线</p>
+              <p className="text-white/80 text-xs sm:text-sm">在线</p>
             </div>
           </div>
           
           <Button
             onClick={onStartFocus}
-            className="bg-white/20 hover:bg-white/30 text-white border border-white/30 hover:border-white/40 px-6 py-3 rounded-2xl transition-all duration-300 backdrop-blur-sm"
+            className="bg-white/20 hover:bg-white/30 text-white border border-white/30 hover:border-white/40 px-4 py-2 sm:px-5 sm:py-2.5 lg:px-6 lg:py-3 rounded-2xl transition-all duration-300 backdrop-blur-sm text-sm sm:text-base"
           >
-            <Zap className="w-4 h-4 mr-2" strokeWidth={1.5} />
-            <span>专注模式</span>
+            <Zap className="w-4 h-4 mr-1.5 sm:mr-2" strokeWidth={1.5} />
+            <span className="hidden sm:inline">专注模式</span>
+            <span className="sm:hidden">专注</span>
           </Button>
         </div>
       </motion.div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-8 space-y-8 relative">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8 relative">
         {messages.map((message, index) => (
           <motion.div
             key={message.id}
@@ -150,12 +153,16 @@ export function ChatInterfaceElite({ coachType, onStartFocus }: ChatInterfaceEli
             transition={{ delay: index * 0.1 }}
             className={`flex gap-4 ${message.role === "user" ? "flex-row-reverse" : "flex-row"} items-start`}
           >
-            {message.role === "assistant" && <CoachAvatarElite type={coachType} size="sm" />}
+            {message.role === "assistant" && (
+              <div className="flex-shrink-0">
+                <CoachAvatarElite type={coachType} size="sm" />
+              </div>
+            )}
 
-            <div className={`max-w-[70%] ${message.role === "user" ? "items-end" : "items-start"} flex flex-col`}>
+            <div className={`message-bubble ${message.role === "user" ? "items-end" : "items-start"} flex flex-col`}>
               {/* 消息卡片 */}
               <div
-                className={`rounded-3xl p-6 backdrop-blur-xl ${
+                className={`rounded-2xl sm:rounded-3xl p-4 sm:p-5 lg:p-6 backdrop-blur-xl ${
                   message.role === "user"
                     ? "bg-white/20 text-white shadow-lg shadow-black/10 border border-white/30"
                     : "bg-white/95 border border-white/50 text-[#2B69B6] shadow-lg shadow-black/5"
@@ -247,14 +254,14 @@ export function ChatInterfaceElite({ coachType, onStartFocus }: ChatInterfaceEli
                 )}
               </div>
 
-              <p className="text-white/60 text-sm mt-3 px-5">
+              <p className="text-white/60 text-xs sm:text-sm mt-2 sm:mt-3 px-3 sm:px-5">
                 {formatTime(new Date(message.timestamp))}
               </p>
             </div>
 
             {message.role === "user" && (
-              <div 
-                className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white"
+              <div
+                className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-sm sm:text-base"
                 style={{
                   background: "rgba(255, 255, 255, 0.25)",
                   backdropFilter: "blur(10px)"
@@ -272,15 +279,17 @@ export function ChatInterfaceElite({ coachType, onStartFocus }: ChatInterfaceEli
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="flex items-start gap-4"
+            className="flex items-start gap-3 sm:gap-4"
           >
-            <CoachAvatarElite type={coachType} size="sm" />
-            <div className="bg-white/95 backdrop-blur-xl border border-white/50 rounded-3xl px-7 py-5">
-              <div className="flex gap-2">
+            <div className="flex-shrink-0">
+              <CoachAvatarElite type={coachType} size="sm" />
+            </div>
+            <div className="bg-white/95 backdrop-blur-xl border border-white/50 rounded-2xl sm:rounded-3xl px-5 py-4 sm:px-7 sm:py-5">
+              <div className="flex gap-1.5 sm:gap-2">
                 {[0, 1, 2].map((i) => (
                   <motion.div
                     key={i}
-                    className="w-2 h-2 rounded-full bg-[#4DD0E1]"
+                    className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#4DD0E1]"
                     animate={{
                       y: [0, -8, 0],
                       opacity: [0.5, 1, 0.5]
@@ -301,31 +310,34 @@ export function ChatInterfaceElite({ coachType, onStartFocus }: ChatInterfaceEli
       </div>
 
       {/* Input */}
-      <motion.div 
+      <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="relative bg-white/10 backdrop-blur-xl border-t border-white/20 p-6"
+        className="relative bg-white/10 backdrop-blur-xl border-t border-white/20 p-4 sm:p-5 lg:p-6"
       >
-        <div className="flex gap-4 items-end max-w-4xl mx-auto">
+        <div className="flex gap-3 sm:gap-4 items-end max-w-4xl mx-auto">
           <div className="flex-1 relative">
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
               placeholder="输入您的问题..."
-              className="bg-white/15 backdrop-blur-xl border-white/30 focus:border-white/50 text-white placeholder:text-white/60 rounded-2xl px-6 py-6 transition-all"
+              className="bg-white/15 backdrop-blur-xl border-white/30 focus:border-white/50 text-white placeholder:text-white/60 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 lg:px-6 lg:py-6 transition-all"
             />
           </div>
-          
+
           <Button
             onClick={handleSend}
             disabled={!inputValue.trim()}
-            className="bg-white/90 hover:bg-white text-[#2B69B6] rounded-2xl w-14 h-14 p-0 disabled:opacity-30 shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/15 transition-all duration-300"
+            className="bg-white/90 hover:bg-white text-[#2B69B6] rounded-2xl touch-target w-12 h-12 sm:w-14 sm:h-14 p-0 disabled:opacity-30 shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/15 transition-all duration-300"
           >
-            <Send className="w-5 h-5" strokeWidth={1.5} />
+            <Send className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
           </Button>
         </div>
       </motion.div>
+
+      {/* 快捷健康数据录入按钮 */}
+      {onOpenHealth && <QuickHealthEntry onClick={onOpenHealth} />}
     </div>
   );
 }

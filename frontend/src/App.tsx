@@ -2,10 +2,13 @@ import { useState, useEffect } from "react";
 import { OnboardingElite } from "./components/OnboardingElite";
 import { ChatInterfaceElite } from "./components/ChatInterfaceElite";
 import { FocusModeElite } from "./components/FocusModeElite";
+import { HealthDataEntry } from "./components/HealthDataEntry";
+import { DeviceFrame } from "./components/DeviceFrame";
+import { DevicePreviewToggle } from "./components/DevicePreviewToggle";
 import { useAuthStore } from "./store/authStore";
 import type { CoachType } from "./api";
 
-type AppState = "onboarding" | "chat" | "focus";
+type AppState = "onboarding" | "chat" | "focus" | "health";
 
 export default function App() {
   const { isAuthenticated, user, fetchCurrentUser } = useAuthStore();
@@ -46,6 +49,14 @@ export default function App() {
     setAppState("chat");
   };
 
+  const handleOpenHealth = () => {
+    setAppState("health");
+  };
+
+  const handleExitHealth = () => {
+    setAppState("chat");
+  };
+
   if (isLoading) {
     return (
       <div className="size-full flex items-center justify-center bg-gradient-to-br from-[#2B69B6] to-[#4DD0E1]">
@@ -57,19 +68,27 @@ export default function App() {
   console.log("Current appState:", appState, "user:", user);
 
   return (
-    <div className="size-full bg-gradient-to-br from-[#2B69B6] to-[#4DD0E1]">
-      {appState === "onboarding" && (
-        <OnboardingElite onComplete={handleOnboardingComplete} />
-      )}
+    <DeviceFrame>
+      <div className="size-full bg-gradient-to-br from-[#2B69B6] to-[#4DD0E1]">
+        {appState === "onboarding" && (
+          <OnboardingElite onComplete={handleOnboardingComplete} />
+        )}
 
-      {appState === "chat" && (
-        <ChatInterfaceElite
-          coachType={user?.coach_selection || selectedCoach}
-          onStartFocus={handleStartFocus}
-        />
-      )}
+        {appState === "chat" && (
+          <ChatInterfaceElite
+            coachType={user?.coach_selection || selectedCoach}
+            onStartFocus={handleStartFocus}
+            onOpenHealth={handleOpenHealth}
+          />
+        )}
 
-      {appState === "focus" && <FocusModeElite onExit={handleExitFocus} />}
-    </div>
+        {appState === "focus" && <FocusModeElite onExit={handleExitFocus} />}
+
+        {appState === "health" && <HealthDataEntry onBack={handleExitHealth} />}
+      </div>
+
+      {/* 设备预览切换器 - 仅在开发环境显示 */}
+      {import.meta.env.DEV && <DevicePreviewToggle />}
+    </DeviceFrame>
   );
 }

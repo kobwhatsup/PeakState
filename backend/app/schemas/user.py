@@ -41,7 +41,7 @@ class UserRegister(BaseModel):
     @classmethod
     def validate_coach_type(cls, v: str) -> str:
         """验证教练类型"""
-        valid_types = ["mentor", "coach", "doctor", "zen"]
+        valid_types = ["sage", "companion", "expert", "mentor", "coach", "doctor", "zen"]
         if v not in valid_types:
             raise ValueError(f"教练类型必须是以下之一: {', '.join(valid_types)}")
         return v

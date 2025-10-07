@@ -55,27 +55,27 @@ export function FocusModeElite({ onExit }: FocusModeEliteProps) {
       </div>
 
       {/* 主内容 */}
-      <div className="relative z-10 text-center px-6 max-w-2xl w-full">
+      <div className="relative z-10 text-center px-4 sm:px-5 lg:px-6 max-w-2xl w-full">
         {!isCompleted ? (
           <>
             {/* 关闭按钮 */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="absolute top-8 right-8"
+              className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8"
             >
               <Button
                 onClick={onExit}
                 variant="ghost"
                 size="icon"
-                className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 text-white transition-all"
+                className="touch-target w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 text-white transition-all"
               >
-                <X className="w-6 h-6" strokeWidth={1.5} />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
               </Button>
             </motion.div>
 
             {/* 计时器环 */}
-            <div className="relative mb-20 mx-auto">
+            <div className="relative mb-12 sm:mb-16 lg:mb-20 mx-auto scale-75 sm:scale-90 lg:scale-100">
               {/* 外层光环 */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-[400px] h-[400px] rounded-full bg-gradient-to-br from-white/10 to-[#4DD0E1]/10 blur-3xl opacity-40" />
@@ -122,10 +122,10 @@ export function FocusModeElite({ onExit }: FocusModeEliteProps) {
               {/* 中心时间显示 */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <div 
-                    className="text-white mb-8"
-                    style={{ 
-                      fontSize: '5rem',
+                  <div
+                    className="text-white mb-4 sm:mb-6 lg:mb-8"
+                    style={{
+                      fontSize: 'clamp(3rem, 12vw, 5rem)',
                       lineHeight: 1,
                       fontVariantNumeric: 'tabular-nums',
                       fontWeight: 300,
@@ -133,11 +133,11 @@ export function FocusModeElite({ onExit }: FocusModeEliteProps) {
                     }}
                   >
                     <span>{time.minutes}</span>
-                    <span className="opacity-40 mx-2">:</span>
+                    <span className="opacity-40 mx-1 sm:mx-2">:</span>
                     <span>{time.seconds}</span>
                   </div>
 
-                  <p className="text-white/90 text-lg">
+                  <p className="text-white/90 text-base sm:text-lg">
                     {isActive ? "保持专注" : "已暂停"}
                   </p>
                 </div>
@@ -145,17 +145,17 @@ export function FocusModeElite({ onExit }: FocusModeEliteProps) {
             </div>
 
             {/* 控制按钮 */}
-            <div className="flex items-center justify-center gap-8">
+            <div className="flex items-center justify-center gap-6 sm:gap-8">
               <Button
                 onClick={() => setIsActive(!isActive)}
                 variant="ghost"
                 size="lg"
-                className="w-16 h-16 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-xl border border-white/30 hover:border-white/40 transition-all"
+                className="touch-target w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-xl border border-white/30 hover:border-white/40 transition-all"
               >
                 {isActive ? (
-                  <Pause className="w-7 h-7 text-white" strokeWidth={1.5} />
+                  <Pause className="w-6 h-6 sm:w-7 sm:h-7 text-white" strokeWidth={1.5} />
                 ) : (
-                  <Play className="w-7 h-7 text-white" strokeWidth={1.5} />
+                  <Play className="w-6 h-6 sm:w-7 sm:h-7 text-white" strokeWidth={1.5} />
                 )}
               </Button>
 
@@ -163,9 +163,9 @@ export function FocusModeElite({ onExit }: FocusModeEliteProps) {
                 onClick={onExit}
                 variant="ghost"
                 size="lg"
-                className="w-16 h-16 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-xl border border-white/30 hover:border-white/40 transition-all"
+                className="touch-target w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-xl border border-white/30 hover:border-white/40 transition-all"
               >
-                <X className="w-7 h-7 text-white" strokeWidth={1.5} />
+                <X className="w-6 h-6 sm:w-7 sm:h-7 text-white" strokeWidth={1.5} />
               </Button>
             </div>
           </>
@@ -183,25 +183,25 @@ export function FocusModeElite({ onExit }: FocusModeEliteProps) {
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
               >
                 <div
-                  className="w-32 h-32 rounded-full mx-auto mb-10 flex items-center justify-center"
+                  className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full mx-auto mb-8 sm:mb-9 lg:mb-10 flex items-center justify-center"
                   style={{
                     background: "rgba(77, 208, 225, 0.3)",
                     backdropFilter: "blur(10px)",
                     boxShadow: "0 20px 60px rgba(77, 208, 225, 0.3)"
                   }}
                 >
-                  <Check className="w-16 h-16 text-white" strokeWidth={1.5} />
+                  <Check className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 text-white" strokeWidth={1.5} />
                 </div>
               </motion.div>
 
-              <h2 className="text-white mb-6">专注时段完成</h2>
-              <p className="text-white/80 text-lg mb-12 leading-relaxed">
+              <h2 className="text-white mb-4 sm:mb-5 lg:mb-6 text-xl sm:text-2xl">专注时段完成</h2>
+              <p className="text-white/80 text-base sm:text-lg mb-8 sm:mb-10 lg:mb-12 leading-relaxed">
                 恭喜！您已完成 25 分钟的专注时段
               </p>
 
               <Button
                 onClick={onExit}
-                className="bg-white/90 hover:bg-white text-[#2B69B6] px-12 py-7 rounded-2xl shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/15 transition-all duration-300"
+                className="bg-white/90 hover:bg-white text-[#2B69B6] touch-target px-8 py-5 sm:px-10 sm:py-6 lg:px-12 lg:py-7 rounded-2xl shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/15 transition-all duration-300 text-base sm:text-lg"
               >
                 返回对话
               </Button>

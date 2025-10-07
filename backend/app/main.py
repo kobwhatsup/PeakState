@@ -97,13 +97,14 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     """
     请求验证错误处理
     """
+    import json
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "success": False,
             "message": "请求参数验证失败",
-            "errors": exc.errors(),
-            "body": exc.body
+            "errors": json.loads(json.dumps(exc.errors(), default=str)),
+            "body": str(exc.body) if exc.body else None
         }
     )
 

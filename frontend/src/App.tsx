@@ -6,6 +6,7 @@ import { HealthDataEntry } from "./components/HealthDataEntry";
 import { DeviceFrame } from "./components/DeviceFrame";
 import { DevicePreviewToggle } from "./components/DevicePreviewToggle";
 import { useAuthStore } from "./store/authStore";
+import { initCapacitor, isNativePlatform } from "./utils/capacitor";
 import type { CoachType } from "./api";
 
 type AppState = "onboarding" | "chat" | "focus" | "health";
@@ -16,9 +17,12 @@ export default function App() {
   const [selectedCoach, setSelectedCoach] = useState<CoachType>("companion");
   const [isLoading, setIsLoading] = useState(true);
 
-  // 应用启动时检查登录状态
+  // 应用启动时初始化
   useEffect(() => {
     const initApp = async () => {
+      // 初始化 Capacitor 原生功能
+      await initCapacitor();
+
       console.log("App init - isAuthenticated:", isAuthenticated);
       if (isAuthenticated) {
         try {
@@ -87,8 +91,8 @@ export default function App() {
         {appState === "health" && <HealthDataEntry onBack={handleExitHealth} />}
       </div>
 
-      {/* 设备预览切换器 - 仅在开发环境显示 */}
-      {import.meta.env.DEV && <DevicePreviewToggle />}
+      {/* 设备预览切换器 - 仅在开发环境且非原生平台显示 */}
+      {import.meta.env.DEV && !isNativePlatform && <DevicePreviewToggle />}
     </DeviceFrame>
   );
 }

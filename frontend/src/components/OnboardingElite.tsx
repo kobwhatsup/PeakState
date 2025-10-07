@@ -36,7 +36,7 @@ export function OnboardingElite({ onComplete }: OnboardingEliteProps) {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-5 lg:p-6 relative overflow-hidden">
+    <div className="min-h-full flex items-center justify-center p-4 sm:p-5 lg:p-6 relative overflow-hidden">
       {/* 柔和的圆形背景装饰 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div

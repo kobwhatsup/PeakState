@@ -380,8 +380,6 @@
   body {
     color: var(--foreground);
     font-family: var(--font-family);
-    background: linear-gradient(#7fb3e0 0%, #5b9fdb 25%, #4a8dcf 50%, #3a7bc2 75%, #2b69b6 100%);
-    min-height: 100vh;
   }
 
   :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) h1 {

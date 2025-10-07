@@ -43,7 +43,7 @@ export function FocusModeElite({ onExit }: FocusModeEliteProps) {
   const time = formatTime(timeLeft);
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
+    <div className="min-h-full relative overflow-hidden flex items-center justify-center">
       {/* 柔和背景 */}
       <div className="absolute inset-0">
         <div

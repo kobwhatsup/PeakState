@@ -69,7 +69,7 @@ export default function App() {
 
   return (
     <DeviceFrame>
-      <div className="size-full bg-gradient-to-br from-[#2B69B6] to-[#4DD0E1]">
+      <div className="w-full min-h-full bg-gradient-to-br from-[#2B69B6] to-[#4DD0E1]">
         {appState === "onboarding" && (
           <OnboardingElite onComplete={handleOnboardingComplete} />
         )}

@@ -83,7 +83,7 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
+    <div className="min-h-full flex flex-col relative overflow-hidden">
       {/* 统一的背景装饰 - 与首页一致 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
@@ -145,6 +145,81 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8 relative">
+        {/* 空状态欢迎界面 */}
+        {messages.length === 0 && !isSending && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col items-center justify-center h-full text-center px-4"
+          >
+            {/* 教练头像 */}
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="mb-6 sm:mb-8"
+            >
+              <CoachAvatarElite type={coachType} size="lg" isActive />
+            </motion.div>
+
+            {/* 欢迎标题 */}
+            <motion.h2
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-white text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4"
+            >
+              你好！我是你的{coachNames[coachType]}
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-white/80 text-sm sm:text-base lg:text-lg mb-8 sm:mb-10 lg:mb-12 max-w-md"
+            >
+              我会帮助你管理精力，优化状态。有什么我可以帮你的吗？
+            </motion.p>
+
+            {/* 快捷提示词 */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-2xl"
+            >
+              {[
+                { icon: "🌟", text: "分析我的能量状态", prompt: "帮我分析一下现在的能量状态" },
+                { icon: "💡", text: "制定精力管理计划", prompt: "帮我制定一个精力管理计划" },
+                { icon: "⏰", text: "提升专注力建议", prompt: "如何提升我的专注力？" },
+                { icon: "😌", text: "缓解疲劳方法", prompt: "我感觉很疲劳，有什么方法可以缓解？" }
+              ].map((item, index) => (
+                <motion.button
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.6 + index * 0.1 }}
+                  whileHover={{ scale: 1.05, backgroundColor: "rgba(255, 255, 255, 0.25)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setInputValue(item.prompt);
+                  }}
+                  className="bg-white/15 hover:bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl p-4 sm:p-5 text-left transition-all duration-300 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl sm:text-3xl">{item.icon}</span>
+                    <span className="text-white text-sm sm:text-base font-medium group-hover:text-white/90">
+                      {item.text}
+                    </span>
+                  </div>
+                </motion.button>
+              ))}
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* 消息列表 */}
         {messages.map((message, index) => (
           <motion.div
             key={message.id}

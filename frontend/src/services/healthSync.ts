@@ -45,16 +45,14 @@ class HealthSyncService {
     }
 
     try {
-      // 请求健康数据权限
-      const permissions = await Health.requestAuthorization({
-        all: [], // 不请求写入权限
-        read: [
-          'steps',
-          'distance',
-          'calories',
-          'activity',
-          'sleep',
-          'heart_rate',
+      // 请求健康数据权限 - 使用正确的 API
+      const permissions = await Health.requestHealthPermissions({
+        permissions: [
+          'READ_STEPS',
+          'READ_DISTANCE',
+          'READ_ACTIVE_CALORIES',
+          'READ_HEART_RATE',
+          'READ_WORKOUTS',
         ],
       });
 
@@ -93,19 +91,27 @@ class HealthSyncService {
     }
 
     try {
-      const sleepData = await Health.queryAggregated({
+      // 注意：capacitor-health 不直接支持睡眠数据的聚合查询
+      // 我们使用 queryWorkouts 来获取睡眠数据
+      const response = await Health.queryWorkouts({
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        dataType: 'sleep',
+        includeHeartRate: false,
+        includeRoute: false,
+        includeSteps: false,
       });
 
-      console.log('睡眠数据:', sleepData);
+      console.log('运动和睡眠数据:', response);
 
-      // 转换为标准格式
-      const records = sleepData.map((item: any) => ({
+      // 过滤出睡眠数据并转换为标准格式
+      const sleepWorkouts = response.workouts.filter((w: any) =>
+        w.workoutType?.toLowerCase().includes('sleep') || w.workoutActivityType === 'SLEEP'
+      );
+
+      const records = sleepWorkouts.map((item: any) => ({
         type: 'sleep',
-        date: new Date(item.startDate).toISOString().split('T')[0],
-        value: item.value, // 睡眠时长（小时）
+        date: item.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+        value: item.duration ? item.duration / 3600 : 0, // 转换为小时
         metadata: {
           startDate: item.startDate,
           endDate: item.endDate,
@@ -129,18 +135,19 @@ class HealthSyncService {
     }
 
     try {
-      const stepsData = await Health.queryAggregated({
+      const response = await Health.queryAggregated({
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         dataType: 'steps',
+        bucket: 'day', // 按天聚合
       });
 
-      console.log('步数数据:', stepsData);
+      console.log('步数数据:', response);
 
-      const records = stepsData.map((item: any) => ({
+      const records = response.aggregatedData.map((item: any) => ({
         type: 'steps',
-        date: new Date(item.startDate).toISOString().split('T')[0],
-        value: item.value,
+        date: item.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+        value: item.value || 0,
         metadata: {
           source: this.platform === 'ios' ? 'apple_health' : 'google_fit',
         },
@@ -162,23 +169,32 @@ class HealthSyncService {
     }
 
     try {
-      const heartRateData = await Health.queryAggregated({
+      // 从 workouts 中获取心率数据
+      const response = await Health.queryWorkouts({
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        dataType: 'heart_rate',
+        includeHeartRate: true, // 包含心率数据
+        includeRoute: false,
+        includeSteps: false,
       });
 
-      console.log('心率数据:', heartRateData);
+      console.log('运动心率数据:', response);
 
-      const records = heartRateData.map((item: any) => ({
-        type: 'heart_rate',
-        date: new Date(item.startDate).toISOString().split('T')[0],
-        value: item.value,
-        metadata: {
-          timestamp: item.startDate,
-          source: this.platform === 'ios' ? 'apple_health' : 'google_fit',
-        },
-      }));
+      // 提取心率数据
+      const records: any[] = [];
+      response.workouts.forEach((workout: any) => {
+        if (workout.heartRateAvg) {
+          records.push({
+            type: 'heart_rate',
+            date: workout.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+            value: workout.heartRateAvg,
+            metadata: {
+              timestamp: workout.startDate,
+              source: this.platform === 'ios' ? 'apple_health' : 'google_fit',
+            },
+          });
+        }
+      });
 
       return records;
     } catch (error) {
@@ -197,29 +213,20 @@ class HealthSyncService {
 
     try {
       // 获取卡路里数据
-      const caloriesData = await Health.queryAggregated({
+      const response = await Health.queryAggregated({
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        dataType: 'calories',
+        dataType: 'active-calories',
+        bucket: 'day',
       });
 
-      // 获取距离数据
-      const distanceData = await Health.queryAggregated({
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        dataType: 'distance',
-      });
+      console.log('活动数据（卡路里）:', response);
 
-      console.log('活动数据:', { caloriesData, distanceData });
-
-      // 合并数据
-      const records = caloriesData.map((item: any, index: number) => ({
+      // 转换为活动记录
+      const records = response.aggregatedData.map((item: any) => ({
         type: 'activity',
-        date: new Date(item.startDate).toISOString().split('T')[0],
-        value: {
-          calories: item.value,
-          distance: distanceData[index]?.value || 0,
-        },
+        date: item.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+        value: item.value || 0, // 卡路里值
         metadata: {
           source: this.platform === 'ios' ? 'apple_health' : 'google_fit',
         },

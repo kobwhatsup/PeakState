@@ -9,11 +9,10 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
 import {
-  healthSyncService,
   initHealthSync,
   checkHealthPermissions,
   syncHealthDataNow,
-} from '../services/healthSync';
+} from '../services/healthSyncAdapter';
 import { Capacitor } from '@capacitor/core';
 
 interface HealthDataPermissionProps {

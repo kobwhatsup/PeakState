@@ -13,9 +13,10 @@ interface ChatInterfaceEliteProps {
   coachType: CoachType;
   onStartFocus?: () => void;
   onOpenHealth?: () => void;
+  onOpenEnergy?: () => void;
 }
 
-export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: ChatInterfaceEliteProps) {
+export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth, onOpenEnergy }: ChatInterfaceEliteProps) {
   const {
     messages,
     currentConversationId,
@@ -459,6 +460,30 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
         animate={{ y: 0, opacity: 1 }}
         className="relative bg-white/15 backdrop-blur-2xl border-t border-white/25 p-5 sm:p-6 lg:p-7"
       >
+        {/* 快捷操作按钮组 */}
+        <div className="flex gap-2 mb-3 max-w-4xl mx-auto">
+          {onOpenEnergy && (
+            <Button
+              onClick={onOpenEnergy}
+              variant="ghost"
+              className="text-white/90 hover:text-white hover:bg-white/10 text-sm"
+            >
+              <TrendingUp className="w-4 h-4 mr-1.5" strokeWidth={1.8} />
+              精力分析
+            </Button>
+          )}
+          {onOpenHealth && (
+            <Button
+              onClick={onOpenHealth}
+              variant="ghost"
+              className="text-white/90 hover:text-white hover:bg-white/10 text-sm"
+            >
+              <Battery className="w-4 h-4 mr-1.5" strokeWidth={1.8} />
+              健康数据
+            </Button>
+          )}
+        </div>
+
         <div className="flex gap-3 sm:gap-4 items-end max-w-4xl mx-auto">
           <div className="flex-1 relative">
             <Input

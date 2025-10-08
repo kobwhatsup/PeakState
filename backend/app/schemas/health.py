@@ -73,3 +73,43 @@ class HealthSummaryResponse(BaseModel):
         description="健康数据摘要,键为数据类型,值为{average, period_days}"
     )
     generated_at: datetime
+
+
+class HealthSyncRecord(BaseModel):
+    """健康数据同步记录"""
+    type: str = Field(..., description="数据类型")
+    date: str = Field(..., description="日期(YYYY-MM-DD)")
+    value: Any = Field(..., description="数据值")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="元数据")
+
+
+class HealthSyncRequest(BaseModel):
+    """健康数据同步请求"""
+    data_source: str = Field(..., description="数据来源(apple_health或google_fit)")
+    data_type: str = Field(..., description="同步类型")
+    records: List[HealthSyncRecord] = Field(..., description="同步记录列表")
+
+    @field_validator("data_source")
+    @classmethod
+    def validate_data_source(cls, v: str) -> str:
+        """验证数据来源"""
+        if v not in ["apple_health", "google_fit"]:
+            raise ValueError("Data source must be 'apple_health' or 'google_fit'")
+        return v
+
+    @field_validator("records")
+    @classmethod
+    def validate_records(cls, v: List[HealthSyncRecord]) -> List[HealthSyncRecord]:
+        """验证记录列表"""
+        if len(v) == 0:
+            raise ValueError("Records list cannot be empty")
+        if len(v) > 1000:
+            raise ValueError("Maximum 1000 records per sync")
+        return v
+
+
+class HealthSyncResponse(BaseModel):
+    """健康数据同步响应"""
+    success: bool
+    synced: int = Field(..., description="成功同步的记录数")
+    errors: List[str] = Field(default_factory=list, description="错误信息列表")

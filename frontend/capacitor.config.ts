@@ -26,6 +26,18 @@ const config: CapacitorConfig = {
       backgroundColor: '#2B69B6',
       overlaysWebView: false,
     },
+    Health: {
+      // iOS HealthKit配置
+      ios: {
+        // 启用后台健康数据同步
+        backgroundDeliveryEnabled: true,
+      },
+      // Android Health Connect配置
+      android: {
+        // Health Connect包名
+        packageName: 'com.google.android.apps.healthdata',
+      },
+    },
   },
 
   ios: {

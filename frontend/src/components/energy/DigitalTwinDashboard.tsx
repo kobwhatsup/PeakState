@@ -5,13 +5,6 @@
 
 import React, { useEffect } from 'react';
 import {
-  IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonRefresher,
-  IonRefresherContent,
   IonGrid,
   IonRow,
   IonCol,
@@ -21,20 +14,25 @@ import {
   IonCardContent,
   IonChip,
   IonIcon,
-  IonSpinner,
-  RefresherEventDetail,
+  IonButton,
 } from '@ionic/react';
 import {
   flashOutline,
   trendingUpOutline,
   statsChartOutline,
   timeOutline,
+  arrowBackOutline,
+  refreshOutline,
 } from 'ionicons/icons';
 import useEnergyStore from '../../store/energyStore';
 import EnergyPredictionCard from './EnergyPredictionCard';
 import EnergyCurveChart from './EnergyCurveChart';
 
-const DigitalTwinDashboard: React.FC = () => {
+interface DigitalTwinDashboardProps {
+  onBack?: () => void;
+}
+
+const DigitalTwinDashboard: React.FC<DigitalTwinDashboardProps> = ({ onBack }) => {
   const {
     digitalTwin,
     futurePredictions,
@@ -54,14 +52,13 @@ const DigitalTwinDashboard: React.FC = () => {
     fetchModelAccuracy();
   }, []);
 
-  // 下拉刷新
-  const handleRefresh = async (event: CustomEvent<RefresherEventDetail>) => {
+  // 刷新数据
+  const handleRefresh = async () => {
     await Promise.all([
       fetchDigitalTwin(),
       fetchFuturePredictions(24),
       fetchModelAccuracy(),
     ]);
-    event.detail.complete();
   };
 
   // 格式化百分比
@@ -81,20 +78,25 @@ const DigitalTwinDashboard: React.FC = () => {
   };
 
   return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>精力数字孪生</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+    <div className="w-full h-full overflow-auto bg-white">
+      {/* 顶部导航栏 */}
+      <div className="sticky top-0 z-10 bg-gradient-to-r from-[#2B69B6] to-[#4DD0E1] text-white px-4 py-3 flex items-center justify-between shadow-md">
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <IonButton fill="clear" onClick={onBack} className="text-white">
+              <IonIcon icon={arrowBackOutline} slot="icon-only" />
+            </IonButton>
+          )}
+          <h1 className="text-xl font-bold">精力数字孪生</h1>
+        </div>
+        <IonButton fill="clear" onClick={handleRefresh} className="text-white">
+          <IonIcon icon={refreshOutline} slot="icon-only" />
+        </IonButton>
+      </div>
 
-      <IonContent fullscreen>
-        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent />
-        </IonRefresher>
-
+      <div className="p-4">
         {error && (
-          <IonCard color="danger" className="m-4">
+          <IonCard color="danger" className="mb-4">
             <IonCardContent>
               <p className="text-white">{error}</p>
               <button
@@ -374,8 +376,8 @@ const DigitalTwinDashboard: React.FC = () => {
             </IonRow>
           )}
         </IonGrid>
-      </IonContent>
-    </IonPage>
+      </div>
+    </div>
   );
 };
 

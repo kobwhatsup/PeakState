@@ -82,3 +82,24 @@ export const getHealthSummary = async (
 export const deleteHealthData = async (dataId: string): Promise<void> => {
   await apiClient.delete(`/health/data/${dataId}`);
 };
+
+/**
+ * 同步健康数据（从HealthKit/Google Fit）
+ */
+export interface SyncHealthDataRequest {
+  data_source: 'apple_health' | 'google_fit';
+  data_type: string;
+  records: Array<{
+    type: string;
+    date: string;
+    value: any;
+    metadata?: Record<string, any>;
+  }>;
+}
+
+export const syncHealthData = async (
+  request: SyncHealthDataRequest
+): Promise<{ success: boolean; synced: number; errors: string[] }> => {
+  const response = await apiClient.post('/health/sync', request);
+  return response.data;
+};

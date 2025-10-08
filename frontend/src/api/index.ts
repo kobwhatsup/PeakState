@@ -35,6 +35,7 @@ export {
   getLatestHealthData,
   getHealthSummary,
   deleteHealthData,
+  syncHealthData,
 } from "./health";
 
 // 天气和环境数据接口
@@ -65,6 +66,8 @@ export type {
   HealthDataListResponse,
   HealthSummaryResponse,
 } from "./types";
+
+export type { SyncHealthDataRequest } from "./health";
 
 export { HealthDataType, HealthDataSource } from "./types";
 

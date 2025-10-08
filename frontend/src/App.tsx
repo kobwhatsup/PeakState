@@ -3,19 +3,22 @@ import { OnboardingElite } from "./components/OnboardingElite";
 import { ChatInterfaceElite } from "./components/ChatInterfaceElite";
 import { FocusModeElite } from "./components/FocusModeElite";
 import { HealthDataEntry } from "./components/HealthDataEntry";
+import DigitalTwinDashboard from "./components/energy/DigitalTwinDashboard";
+import HealthSyncTest from "./pages/HealthSyncTest";
 import { DeviceFrame } from "./components/DeviceFrame";
 import { DevicePreviewToggle } from "./components/DevicePreviewToggle";
 import { useAuthStore } from "./store/authStore";
 import { initCapacitor, isNativePlatform } from "./utils/capacitor";
 import type { CoachType } from "./api";
 
-type AppState = "onboarding" | "chat" | "focus" | "health";
+type AppState = "onboarding" | "chat" | "focus" | "health" | "energy" | "healthSync";
 
 export default function App() {
   const { isAuthenticated, user, fetchCurrentUser } = useAuthStore();
-  const [appState, setAppState] = useState<AppState>("onboarding");
+  // 临时设置为healthSync用于测试
+  const [appState, setAppState] = useState<AppState>("healthSync");
   const [selectedCoach, setSelectedCoach] = useState<CoachType>("companion");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   // 应用启动时初始化
   useEffect(() => {
@@ -61,6 +64,22 @@ export default function App() {
     setAppState("chat");
   };
 
+  const handleOpenEnergy = () => {
+    setAppState("energy");
+  };
+
+  const handleExitEnergy = () => {
+    setAppState("chat");
+  };
+
+  const handleOpenHealthSync = () => {
+    setAppState("healthSync");
+  };
+
+  const handleExitHealthSync = () => {
+    setAppState("chat");
+  };
+
   if (isLoading) {
     return (
       <div className="size-full flex items-center justify-center bg-gradient-to-br from-[#2B69B6] to-[#4DD0E1]">
@@ -83,12 +102,17 @@ export default function App() {
             coachType={user?.coach_selection || selectedCoach}
             onStartFocus={handleStartFocus}
             onOpenHealth={handleOpenHealth}
+            onOpenEnergy={handleOpenEnergy}
           />
         )}
 
         {appState === "focus" && <FocusModeElite onExit={handleExitFocus} />}
 
         {appState === "health" && <HealthDataEntry onBack={handleExitHealth} />}
+
+        {appState === "energy" && <DigitalTwinDashboard onBack={handleExitEnergy} />}
+
+        {appState === "healthSync" && <HealthSyncTest />}
       </div>
 
       {/* 设备预览切换器 - 仅在开发环境且非原生平台显示 */}

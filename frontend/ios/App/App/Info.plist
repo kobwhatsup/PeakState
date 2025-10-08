@@ -49,5 +49,13 @@
 	<string>PeakState需要获取您的位置信息，以便为您提供精准的天气数据和精力预测服务。您的位置数据将被安全保护，仅用于改善您的使用体验。</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>PeakState需要获取您的位置信息，以便为您提供精准的天气数据和精力预测服务。您的位置数据将被安全保护，仅用于改善您的使用体验。</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>PeakState需要读取您的健康数据（睡眠、运动、心率等），以提供个性化的精力管理建议。您的健康数据将被安全保护，仅用于改善您的使用体验。</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>PeakState需要更新您的健康数据，以记录您的精力状态和活动信息。您的健康数据将被安全保护，仅用于改善您的使用体验。</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>processing</string>
+	</array>
 </dict>
 </plist>

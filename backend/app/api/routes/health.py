@@ -17,7 +17,9 @@ from app.schemas.health import (
     HealthDataResponse,
     HealthDataBatchCreate,
     HealthSummaryResponse,
-    HealthDataListResponse
+    HealthDataListResponse,
+    HealthSyncRequest,
+    HealthSyncResponse
 )
 
 
@@ -253,3 +255,131 @@ async def delete_health_data(
         )
 
     return None
+
+
+@router.post("/sync", response_model=HealthSyncResponse)
+async def sync_health_data(
+    sync_request: HealthSyncRequest,
+    db: DatabaseSession,
+    current_user: CurrentUser
+) -> HealthSyncResponse:
+    """
+    同步健康数据（从HealthKit/Google Fit）
+
+    批量导入来自移动设备健康平台的数据，自动去重，支持多种数据类型。
+
+    Args:
+        sync_request: 同步请求数据
+        db: 数据库会话
+        current_user: 当前用户
+
+    Returns:
+        同步结果，包含成功数量和错误信息
+    """
+    synced_count = 0
+    errors = []
+
+    # 数据类型映射（从前端类型到数据库类型）
+    type_mapping = {
+        "sleep": HealthDataType.SLEEP_DURATION,
+        "steps": HealthDataType.STEPS,
+        "heart_rate": HealthDataType.HEART_RATE,
+        "activity": HealthDataType.ACTIVE_CALORIES,
+        "calories": HealthDataType.ACTIVE_CALORIES,
+        "distance": HealthDataType.DISTANCE,
+    }
+
+    # 确定数据来源
+    source = (
+        HealthDataSource.APPLE_HEALTH
+        if sync_request.data_source == "apple_health"
+        else HealthDataSource.GOOGLE_FIT
+    )
+
+    health_data_list = []
+
+    for record in sync_request.records:
+        try:
+            # 映射数据类型
+            data_type = type_mapping.get(record.type, record.type)
+
+            # 生成外部ID用于去重
+            external_id = f"{sync_request.data_source}_{record.type}_{record.date}_{current_user.id}"
+
+            # 检查是否已同步
+            is_duplicate = await health_crud.check_duplicate_sync(
+                db, current_user.id, external_id
+            )
+            if is_duplicate:
+                continue
+
+            # 解析日期
+            try:
+                recorded_at = datetime.fromisoformat(record.date)
+            except ValueError:
+                recorded_at = datetime.strptime(record.date, "%Y-%m-%d")
+
+            # 处理value（可能是对象或数值）
+            if isinstance(record.value, dict):
+                # 对于activity类型，value是一个包含多个指标的对象
+                # 为每个指标创建单独的记录
+                for key, val in record.value.items():
+                    sub_type = type_mapping.get(key, key)
+                    sub_external_id = f"{external_id}_{key}"
+
+                    # 检查子记录是否已同步
+                    is_sub_duplicate = await health_crud.check_duplicate_sync(
+                        db, current_user.id, sub_external_id
+                    )
+                    if is_sub_duplicate:
+                        continue
+
+                    health_data_obj = HealthData(
+                        user_id=current_user.id,
+                        data_type=sub_type,
+                        value=float(val),
+                        source=source,
+                        unit=None,
+                        recorded_at=recorded_at,
+                        extra_data=record.metadata or {},
+                        external_id=sub_external_id,
+                        synced_at=datetime.utcnow()
+                    )
+                    health_data_list.append(health_data_obj)
+            else:
+                # 普通数值类型
+                health_data_obj = HealthData(
+                    user_id=current_user.id,
+                    data_type=data_type,
+                    value=float(record.value),
+                    source=source,
+                    unit=None,
+                    recorded_at=recorded_at,
+                    extra_data=record.metadata or {},
+                    external_id=external_id,
+                    synced_at=datetime.utcnow()
+                )
+                health_data_list.append(health_data_obj)
+
+        except Exception as e:
+            errors.append(f"处理记录 {record.type}@{record.date} 失败: {str(e)}")
+            continue
+
+    # 批量插入数据
+    if health_data_list:
+        try:
+            created_data = await health_crud.create_health_data_batch(db, health_data_list)
+            synced_count = len(created_data)
+        except Exception as e:
+            errors.append(f"批量插入失败: {str(e)}")
+            return HealthSyncResponse(
+                success=False,
+                synced=0,
+                errors=errors
+            )
+
+    return HealthSyncResponse(
+        success=len(errors) == 0 or synced_count > 0,
+        synced=synced_count,
+        errors=errors
+    )

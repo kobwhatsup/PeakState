@@ -5,12 +5,13 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User, RegisterRequest, LoginRequest, CoachType } from "../api";
+import type { User, RegisterRequest, LoginRequest, UpdateUserRequest, CoachType } from "../api";
 import {
   register as apiRegister,
   login as apiLogin,
   logout as apiLogout,
   getCurrentUser as apiGetCurrentUser,
+  updateUser as apiUpdateUser,
   isAuthenticated as apiIsAuthenticated,
 } from "../api";
 
@@ -27,7 +28,7 @@ interface AuthState {
   logout: () => Promise<void>;
   fetchCurrentUser: () => Promise<void>;
   clearError: () => void;
-  updateCoachSelection: (coachType: CoachType) => void;
+  updateCoachSelection: (coachType: CoachType) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -172,16 +173,24 @@ export const useAuthStore = create<AuthState>()(
         set({ error: null });
       },
 
-      // 更新教练选择（仅本地状态，实际需要调用API）
-      updateCoachSelection: (coachType: CoachType) => {
+      // 更新教练选择
+      updateCoachSelection: async (coachType: CoachType) => {
         const { user } = get();
-        if (user) {
-          set({
-            user: {
-              ...user,
-              coach_selection: coachType,
-            },
-          });
+        if (!user) return;
+
+        set({ isLoading: true, error: null });
+        try {
+          const updatedUser = await apiUpdateUser({ coach_selection: coachType });
+          set({ user: updatedUser });
+        } catch (error: any) {
+          const errorMessage =
+            error.response?.data?.detail ||
+            error.response?.data?.message ||
+            "更新教练类型失败";
+          set({ error: errorMessage });
+          throw error;
+        } finally {
+          set({ isLoading: false });
         }
       },
     }),

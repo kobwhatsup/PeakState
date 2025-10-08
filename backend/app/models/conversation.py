@@ -5,7 +5,7 @@
 
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 from sqlalchemy import String, DateTime, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -15,6 +15,7 @@ from app.core.database import Base
 
 if TYPE_CHECKING:
     from app.models.user import User
+    from app.models.ai_metrics import AIRequestMetrics
 
 
 class Conversation(Base):
@@ -124,6 +125,12 @@ class Conversation(Base):
     user: Mapped["User"] = relationship(
         "User",
         back_populates="conversations"
+    )
+    ai_metrics: Mapped[List["AIRequestMetrics"]] = relationship(
+        "AIRequestMetrics",
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        lazy="noload"
     )
 
     def __repr__(self) -> str:

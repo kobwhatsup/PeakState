@@ -5,6 +5,7 @@
 from app.models.user import User, CoachType
 from app.models.conversation import Conversation
 from app.models.health_data import HealthData, HealthDataType, HealthDataSource
+from app.models.ai_metrics import AIRequestMetrics
 
 __all__ = [
     "User",
@@ -13,4 +14,5 @@ __all__ = [
     "HealthData",
     "HealthDataType",
     "HealthDataSource",
+    "AIRequestMetrics",
 ]

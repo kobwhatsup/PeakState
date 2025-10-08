@@ -12,6 +12,7 @@ export {
   login,
   logout,
   getCurrentUser,
+  updateUser,
   refreshToken,
   isAuthenticated,
 } from "./auth";
@@ -36,6 +37,13 @@ export {
   deleteHealthData,
 } from "./health";
 
+// 天气和环境数据接口
+export {
+  getCurrentWeather,
+  reportEnvironmentData,
+  getEnvironmentHistory,
+} from "./weather";
+
 // 类型定义
 export type {
   ApiResponse,
@@ -43,6 +51,7 @@ export type {
   User,
   RegisterRequest,
   LoginRequest,
+  UpdateUserRequest,
   Token,
   Message,
   Conversation,
@@ -58,3 +67,33 @@ export type {
 } from "./types";
 
 export { HealthDataType, HealthDataSource } from "./types";
+
+// 天气和环境数据类型
+export type {
+  WeatherData,
+  WeatherRequest,
+  EnvironmentReportRequest,
+  EnvironmentReportResponse,
+} from "./weather";
+
+// 精力预测和数字孪生
+export {
+  getCurrentEnergy,
+  predictFutureEnergy,
+  getDigitalTwin,
+  getEnergyPatterns,
+  getPersonalBaseline,
+  getEnergyStats,
+  validatePrediction,
+  getModelAccuracy,
+} from "./energy";
+
+export type {
+  EnergyPrediction,
+  PersonalBaseline,
+  EnergyPattern,
+  DigitalTwin,
+  ValidationRequest,
+  ValidationResponse,
+  ModelAccuracy,
+} from "./energy";

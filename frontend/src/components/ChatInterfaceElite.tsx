@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "motion/react";
-import { Send, Zap, Battery, TrendingUp, ArrowLeft } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { Send, Zap, Battery, TrendingUp, ArrowLeft, Settings, LogOut, User } from "lucide-react";
 import { CoachAvatarElite } from "./CoachAvatarElite";
 import { QuickHealthEntry } from "./QuickHealthEntry";
 import { Button } from "./ui/button";
@@ -25,9 +25,11 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
     loadConversations,
   } = useChatStore();
 
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [inputValue, setInputValue] = useState("");
+  const [showMenu, setShowMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // 初始化：加载对话列表
   useEffect(() => {
@@ -46,6 +48,20 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // 点击外部关闭菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showMenu]);
 
   const handleSend = async () => {
     if (!inputValue.trim() || isSending) return;
@@ -75,21 +91,29 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
     return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      window.location.reload(); // 重新加载页面回到登录界面
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
   const coachNames: Record<CoachType, string> = {
-    mentor: "智慧导师",
-    coach: "能量教练",
-    doctor: "健康医生",
-    zen: "禅意大师"
+    sage: "温言",
+    companion: "明亮",
+    expert: "深思"
   };
 
   return (
     <div className="min-h-full flex flex-col relative overflow-hidden">
-      {/* 统一的背景装饰 - 与首页一致 */}
+      {/* 统一的背景装饰 - 增强对比度 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
           className="absolute w-[800px] h-[800px] rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 60%)",
+            background: "radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, transparent 60%)",
             top: "-20%",
             left: "50%",
             transform: "translateX(-50%)",
@@ -99,7 +123,7 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
         <div
           className="absolute w-[600px] h-[600px] rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(77, 208, 225, 0.08) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(77, 208, 225, 0.12) 0%, transparent 70%)",
             bottom: "10%",
             right: "-10%",
             filter: "blur(80px)"
@@ -111,35 +135,78 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="relative bg-white/10 backdrop-blur-xl border-b border-white/20 p-4 sm:p-5 lg:p-6"
+        className="relative bg-white/15 backdrop-blur-2xl border-b border-white/25 p-5 sm:p-6 lg:p-7"
       >
-        <div className="flex items-center gap-3 sm:gap-4 lg:gap-5">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-white/10 rounded-full touch-target"
-          >
-            <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
-          </Button>
-
+        <div className="flex items-center gap-4 sm:gap-5 lg:gap-6">
           <CoachAvatarElite type={coachType} size="md" isActive />
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-white mb-1 text-sm sm:text-base truncate">{coachNames[coachType]}</h3>
+            <h3 className="text-white mb-1.5 text-base sm:text-lg font-semibold truncate">{coachNames[coachType]}</h3>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#4DD0E1]" />
-              <p className="text-white/80 text-xs sm:text-sm">在线</p>
+              <div className="w-2 h-2 rounded-full bg-[#4DD0E1] shadow-lg shadow-[#4DD0E1]/50" />
+              <p className="text-white/90 text-xs sm:text-sm font-medium">在线</p>
             </div>
           </div>
-          
+
           <Button
             onClick={onStartFocus}
-            className="bg-white/20 hover:bg-white/30 text-white border border-white/30 hover:border-white/40 px-4 py-2 sm:px-5 sm:py-2.5 lg:px-6 lg:py-3 rounded-2xl transition-all duration-300 backdrop-blur-sm text-sm sm:text-base"
+            className="bg-white/25 hover:bg-white/35 text-white border border-white/40 hover:border-white/50 px-4 py-2.5 sm:px-5 sm:py-3 lg:px-6 lg:py-3.5 rounded-2xl transition-all duration-300 backdrop-blur-sm text-sm sm:text-base font-medium shadow-lg"
           >
-            <Zap className="w-4 h-4 mr-1.5 sm:mr-2" strokeWidth={1.5} />
+            <Zap className="w-4 h-4 mr-1.5 sm:mr-2" strokeWidth={1.8} />
             <span className="hidden sm:inline">专注模式</span>
             <span className="sm:hidden">专注</span>
           </Button>
+
+          {/* 设置菜单按钮 */}
+          <div className="relative" ref={menuRef}>
+            <Button
+              onClick={() => setShowMenu(!showMenu)}
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/10 rounded-full touch-target"
+            >
+              <Settings className="w-5 h-5" strokeWidth={1.5} />
+            </Button>
+
+            {/* 下拉菜单 */}
+            <AnimatePresence>
+              {showMenu && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl overflow-hidden z-50"
+                >
+                  <div className="py-2">
+                    <button
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                      onClick={() => {
+                        setShowMenu(false);
+                        // TODO: 打开用户信息页面
+                      }}
+                    >
+                      <User className="w-5 h-5 text-gray-600" strokeWidth={1.5} />
+                      <span className="text-gray-800">个人信息</span>
+                    </button>
+
+                    <div className="h-px bg-gray-200 my-1" />
+
+                    <button
+                      className="w-full px-4 py-3 text-left hover:bg-red-50 flex items-center gap-3 transition-colors text-red-600"
+                      onClick={() => {
+                        setShowMenu(false);
+                        handleLogout();
+                      }}
+                    >
+                      <LogOut className="w-5 h-5" strokeWidth={1.5} />
+                      <span>退出登录</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </motion.div>
 
@@ -158,7 +225,7 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="mb-6 sm:mb-8"
+              className="mb-8 sm:mb-10"
             >
               <CoachAvatarElite type={coachType} size="lg" isActive />
             </motion.div>
@@ -168,7 +235,8 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-white text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4"
+              className="text-white text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-4 sm:mb-5 leading-tight"
+              style={{ textShadow: "0 2px 8px rgba(0, 0, 0, 0.15)" }}
             >
               你好！我是你的{coachNames[coachType]}
             </motion.h2>
@@ -177,7 +245,8 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-white/80 text-sm sm:text-base lg:text-lg mb-8 sm:mb-10 lg:mb-12 max-w-md"
+              className="text-white/90 text-base sm:text-lg lg:text-xl mb-10 sm:mb-12 lg:mb-14 max-w-lg leading-relaxed font-medium"
+              style={{ textShadow: "0 1px 4px rgba(0, 0, 0, 0.1)" }}
             >
               我会帮助你管理精力，优化状态。有什么我可以帮你的吗？
             </motion.p>
@@ -200,16 +269,16 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.6 + index * 0.1 }}
-                  whileHover={{ scale: 1.05, backgroundColor: "rgba(255, 255, 255, 0.25)" }}
+                  whileHover={{ scale: 1.05, backgroundColor: "rgba(255, 255, 255, 0.35)" }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => {
                     setInputValue(item.prompt);
                   }}
-                  className="bg-white/15 hover:bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl p-4 sm:p-5 text-left transition-all duration-300 group"
+                  className="bg-white/25 hover:bg-white/30 backdrop-blur-xl border border-white/40 rounded-3xl p-5 sm:p-6 text-left transition-all duration-300 group shadow-lg"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl sm:text-3xl">{item.icon}</span>
-                    <span className="text-white text-sm sm:text-base font-medium group-hover:text-white/90">
+                  <div className="flex items-center gap-4">
+                    <span className="text-3xl sm:text-4xl">{item.icon}</span>
+                    <span className="text-white text-base sm:text-lg font-semibold group-hover:text-white leading-snug" style={{ textShadow: "0 1px 3px rgba(0, 0, 0, 0.1)" }}>
                       {item.text}
                     </span>
                   </div>
@@ -388,7 +457,7 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="relative bg-white/10 backdrop-blur-xl border-t border-white/20 p-4 sm:p-5 lg:p-6"
+        className="relative bg-white/15 backdrop-blur-2xl border-t border-white/25 p-5 sm:p-6 lg:p-7"
       >
         <div className="flex gap-3 sm:gap-4 items-end max-w-4xl mx-auto">
           <div className="flex-1 relative">
@@ -397,16 +466,16 @@ export function ChatInterfaceElite({ coachType, onStartFocus, onOpenHealth }: Ch
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
               placeholder="输入您的问题..."
-              className="bg-white/15 backdrop-blur-xl border-white/30 focus:border-white/50 text-white placeholder:text-white/60 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 lg:px-6 lg:py-6 transition-all"
+              className="bg-white/25 backdrop-blur-xl border-white/50 focus:border-white/70 text-white placeholder:text-white/75 rounded-2xl px-5 py-4 sm:px-6 sm:py-5 lg:px-7 lg:py-6 h-14 text-base transition-all font-medium shadow-lg"
             />
           </div>
 
           <Button
             onClick={handleSend}
             disabled={!inputValue.trim()}
-            className="bg-white/90 hover:bg-white text-[#2B69B6] rounded-2xl touch-target w-12 h-12 sm:w-14 sm:h-14 p-0 disabled:opacity-30 shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/15 transition-all duration-300"
+            className="bg-white/95 hover:bg-white text-[#2B69B6] rounded-2xl touch-target w-14 h-14 sm:w-16 sm:h-16 p-0 disabled:opacity-30 shadow-xl shadow-black/15 hover:shadow-2xl hover:shadow-black/20 transition-all duration-300"
           >
-            <Send className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
+            <Send className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
           </Button>
         </div>
       </motion.div>

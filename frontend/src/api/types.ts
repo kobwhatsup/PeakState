@@ -21,15 +21,27 @@ export interface User {
   phone_number: string;
   coach_selection: CoachType;
   timezone: string;
+
+  // 用户画像
+  age?: number | null;
+  gender?: string | null;
+  occupation?: string | null;
+  health_goals?: string | null;
+
+  // 订阅状态
   is_subscribed: boolean;
   subscription_type: string | null;
   subscription_end_date: string | null;
   is_trial: boolean;
   trial_end_date: string | null;
+
+  // 用户偏好
   morning_briefing_enabled: boolean;
   morning_briefing_time: string;
   evening_review_enabled: boolean;
   evening_review_time: string;
+
+  // 时间戳
   created_at: string;
   last_login_at: string | null;
 }
@@ -43,6 +55,19 @@ export interface RegisterRequest {
 export interface LoginRequest {
   phone_number: string;
   password: string;
+}
+
+export interface UpdateUserRequest {
+  coach_selection?: CoachType;
+  timezone?: string;
+  age?: number;
+  gender?: string;
+  occupation?: string;
+  health_goals?: string;
+  morning_briefing_enabled?: boolean;
+  morning_briefing_time?: string;
+  evening_review_enabled?: boolean;
+  evening_review_time?: string;
 }
 
 export interface Token {
@@ -73,14 +98,37 @@ export interface Conversation {
   last_message_at: string | null;
 }
 
+export interface ConversationListItem {
+  conversation_id: string;
+  title: string | null;
+  last_message: string | null;
+  message_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationListResponse {
+  conversations: ConversationListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 export interface SendMessageRequest {
   message: string;
   conversation_id?: string;
+  include_history?: boolean;
 }
 
 export interface SendMessageResponse {
   conversation_id: string;
-  message: Message;
+  message: string;
+  ai_provider: string;
+  complexity_score: number;
+  intent: string;
+  tokens_used?: number;
+  response_time_ms: number;
+  timestamp?: string;
 }
 
 export interface CreateConversationRequest {

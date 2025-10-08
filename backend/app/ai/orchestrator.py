@@ -115,8 +115,8 @@ class AIOrchestrator:
         conversation_history: Optional[List[Dict]] = None
     ) -> IntentClassification:
         """
-        意图分类
-        使用简单规则或轻量模型进行快速意图识别
+        意图分类 (升级版)
+        使用混合策略: 规则匹配 + Sentence-Transformers语义相似度
 
         Args:
             user_message: 用户消息
@@ -125,109 +125,68 @@ class AIOrchestrator:
         Returns:
             IntentClassification: 意图分类结果
         """
-        message_lower = user_message.lower()
+        from app.ai.intent_classifier import get_intent_classifier
 
-        # 简单规则分类(生产环境可用小模型)
-        if any(word in message_lower for word in ["你好", "hi", "hello", "早", "晚上好"]):
-            return IntentClassification(
-                intent=IntentType.GREETING,
-                confidence=0.95
-            )
+        classifier = get_intent_classifier()
 
-        if any(word in message_lower for word in ["好的", "嗯", "是的", "对", "ok"]):
-            return IntentClassification(
-                intent=IntentType.CONFIRMATION,
-                confidence=0.9
-            )
-
-        if any(word in message_lower for word in ["睡眠", "心率", "数据", "查看"]):
-            return IntentClassification(
-                intent=IntentType.DATA_QUERY,
-                confidence=0.85,
-                requires_tools=True
-            )
-
-        if any(word in message_lower for word in ["建议", "怎么", "如何", "帮我"]):
-            return IntentClassification(
-                intent=IntentType.ADVICE_REQUEST,
-                confidence=0.8,
-                requires_rag=True
-            )
-
-        if any(word in message_lower for word in ["焦虑", "压力", "累", "疲惫", "难受"]):
-            return IntentClassification(
-                intent=IntentType.EMOTIONAL_SUPPORT,
-                confidence=0.85,
-                requires_empathy=True
-            )
-
-        if any(word in message_lower for word in ["分析", "评估", "诊断", "方案"]):
-            return IntentClassification(
-                intent=IntentType.COMPLEX_ANALYSIS,
-                confidence=0.75,
-                requires_tools=True,
-                requires_rag=True
-            )
-
-        # 默认: 简单咨询
-        return IntentClassification(
-            intent=IntentType.ADVICE_REQUEST,
-            confidence=0.6
+        # 调用新的分类器
+        result = await classifier.classify(
+            message=user_message,
+            conversation_history=conversation_history
         )
 
-    def _calculate_complexity(
+        # 记录分类结果 (用于监控)
+        logger.info(
+            f"🎯 Intent: {result.intent.value} | "
+            f"Confidence: {result.confidence:.2f}"
+        )
+
+        return result
+
+    async def _calculate_complexity(
         self,
         intent: IntentClassification,
-        context_length: int,
-        user_profile: Optional[Dict] = None
+        user_message: str,
+        conversation_history: Optional[List[Dict]] = None,
+        user_profile: Optional[Dict] = None,
+        user_id: Optional[str] = None
     ) -> int:
         """
-        计算请求复杂度(1-10)
+        计算请求复杂度(1-10) - 升级版
+        使用ComplexityAnalyzer进行智能分析
 
         Args:
             intent: 意图分类
-            context_length: 上下文长度(字符数)
+            user_message: 用户消息
+            conversation_history: 对话历史
             user_profile: 用户画像
+            user_id: 用户ID
 
         Returns:
             int: 复杂度分数(1-10)
         """
-        complexity = 0
+        from app.ai.complexity_analyzer import get_complexity_analyzer
 
-        # 基于意图的基础分数
-        intent_base_score = {
-            IntentType.GREETING: 1,
-            IntentType.CONFIRMATION: 1,
-            IntentType.DATA_QUERY: 3,
-            IntentType.ADVICE_REQUEST: 5,
-            IntentType.EMOTIONAL_SUPPORT: 6,
-            IntentType.COMPLEX_ANALYSIS: 8,
-            IntentType.HEALTH_DIAGNOSIS: 9,
-        }
-        complexity += intent_base_score.get(intent.intent, 5)
+        analyzer = get_complexity_analyzer()
 
-        # 上下文长度加分
-        if context_length > 1000:
-            complexity += 2
-        elif context_length > 500:
-            complexity += 1
+        # 使用ComplexityAnalyzer进行智能分析
+        factors = await analyzer.analyze_complexity(
+            intent=intent,
+            user_message=user_message,
+            conversation_history=conversation_history,
+            user_profile=user_profile,
+            user_id=user_id
+        )
 
-        # 需要工具调用加分
-        if intent.requires_tools:
-            complexity += 1
-
-        # 需要RAG加分
-        if intent.requires_rag:
-            complexity += 1
-
-        return min(complexity, 10)  # 上限10
+        return factors.total_score
 
     async def route_request(
         self,
         user_message: str,
         conversation_history: Optional[List[Dict]] = None,
         user_profile: Optional[Dict] = None,
-        force_provider: Optional[AIProvider] = None
+        force_provider: Optional[AIProvider] = None,
+        user_id: Optional[str] = None
     ) -> RoutingDecision:
         """
         智能路由决策
@@ -254,12 +213,14 @@ class AIOrchestrator:
         # 1. 意图分类
         intent = await self.classify_intent(user_message, conversation_history)
 
-        # 2. 计算复杂度
-        context_length = len(user_message)
-        if conversation_history:
-            context_length += sum(len(msg.get("content", "")) for msg in conversation_history)
-
-        complexity = self._calculate_complexity(intent, context_length, user_profile)
+        # 2. 计算复杂度 (使用升级版ComplexityAnalyzer)
+        complexity = await self._calculate_complexity(
+            intent=intent,
+            user_message=user_message,
+            conversation_history=conversation_history,
+            user_profile=user_profile,
+            user_id=user_id
+        )
 
         # 3. 路由决策
         provider: AIProvider
@@ -322,7 +283,9 @@ class AIOrchestrator:
         conversation_history: Optional[List[Dict]] = None,
         max_tokens: int = 2000,
         temperature: float = 0.7,
-        tools: Optional[List[Dict]] = None
+        tools: Optional[List[Dict]] = None,
+        user_id: Optional["UUID"] = None,
+        db: Optional["AsyncSession"] = None
     ) -> AIResponse:
         """
         生成AI响应
@@ -360,7 +323,9 @@ class AIOrchestrator:
             return AIResponse(content=content, tokens_used=tokens)
 
         elif provider == AIProvider.CLAUDE_SONNET_4:
-            content, tokens = await self._generate_claude(messages, system_prompt, max_tokens, temperature, tools)
+            content, tokens = await self._generate_claude(
+                messages, system_prompt, max_tokens, temperature, tools, user_id, db
+            )
             return AIResponse(content=content, tokens_used=tokens)
 
         else:
@@ -372,10 +337,39 @@ class AIOrchestrator:
         system_prompt: Optional[str],
         max_tokens: int
     ) -> str:
-        """使用本地模型生成"""
-        # TODO: 实现本地模型推理
-        logger.warning("⚠️  Local model not implemented yet, using mock response")
-        return "这是本地模型的模拟响应。实际实现中会加载Phi-3.5模型进行推理。"
+        """使用本地Phi-3.5模型生成"""
+        from app.ai.local_models import get_local_model_manager
+
+        local_manager = get_local_model_manager()
+
+        # 构建完整提示词
+        prompt_parts = []
+
+        # 添加系统提示
+        if system_prompt:
+            prompt_parts.append(f"系统指令: {system_prompt}\n")
+
+        # 添加对话历史
+        for msg in messages:
+            role = msg["role"]
+            content = msg["content"]
+
+            if role == "user":
+                prompt_parts.append(f"用户: {content}")
+            elif role == "assistant":
+                prompt_parts.append(f"助手: {content}")
+
+        full_prompt = "\n\n".join(prompt_parts)
+
+        # 使用本地模型生成
+        response = await local_manager.generate(
+            prompt=full_prompt,
+            max_new_tokens=max_tokens,
+            temperature=0.7,
+            top_p=0.9
+        )
+
+        return response
 
     async def _generate_openai(
         self,
@@ -423,13 +417,24 @@ class AIOrchestrator:
         system_prompt: Optional[str],
         max_tokens: int,
         temperature: float,
-        tools: Optional[List[Dict]]
+        tools: Optional[List[Dict]],
+        user_id: Optional["UUID"] = None,
+        db: Optional["AsyncSession"] = None
     ) -> Tuple[str, int]:
-        """使用Claude生成,返回(content, tokens)"""
+        """
+        使用Claude生成,支持MCP工具调用
+
+        处理流程：
+        1. 调用Claude API (传入tools)
+        2. 如果响应包含tool_use，执行工具并返回结果给Claude
+        3. Claude基于工具结果继续生成最终响应
+        4. 递归处理直到获得最终文本响应
+        """
         if not self.anthropic_client:
             raise RuntimeError("Anthropic client not initialized")
 
         try:
+            # 调用Claude API
             response = await self.anthropic_client.messages.create(
                 model=settings.ANTHROPIC_MODEL,
                 max_tokens=max_tokens,
@@ -441,10 +446,85 @@ class AIOrchestrator:
 
             # 处理工具调用
             if response.stop_reason == "tool_use":
-                # TODO: 处理MCP工具调用
-                logger.info("🔧 Tool use detected")
+                logger.info("🔧 Tool use detected, processing...")
 
-            content = response.content[0].text
+                # 导入MCP工具执行器
+                from app.mcp import execute_tool
+                import json
+
+                # 收集所有工具调用结果
+                tool_results = []
+
+                for content_block in response.content:
+                    if content_block.type == "tool_use":
+                        tool_name = content_block.name
+                        tool_input = content_block.input
+                        tool_use_id = content_block.id
+
+                        logger.info(f"   Executing tool: {tool_name}")
+                        logger.debug(f"   Input: {tool_input}")
+
+                        try:
+                            # 执行工具
+                            result = await execute_tool(
+                                tool_name=tool_name,
+                                tool_input=tool_input,
+                                user_id=user_id,
+                                db=db
+                            )
+
+                            logger.info(f"   ✅ Tool executed: {tool_name}")
+
+                            # 添加工具结果
+                            tool_results.append({
+                                "type": "tool_result",
+                                "tool_use_id": tool_use_id,
+                                "content": json.dumps(result, ensure_ascii=False)
+                            })
+
+                        except Exception as e:
+                            logger.error(f"   ❌ Tool execution failed: {tool_name} - {e}")
+
+                            # 返回错误信息给Claude
+                            tool_results.append({
+                                "type": "tool_result",
+                                "tool_use_id": tool_use_id,
+                                "content": json.dumps({
+                                    "error": str(e),
+                                    "tool": tool_name
+                                }, ensure_ascii=False),
+                                "is_error": True
+                            })
+
+                # 将工具调用和结果添加到消息历史
+                messages.append({
+                    "role": "assistant",
+                    "content": response.content
+                })
+
+                messages.append({
+                    "role": "user",
+                    "content": tool_results
+                })
+
+                # 递归调用，让Claude基于工具结果继续生成
+                logger.info("🔄 Calling Claude with tool results...")
+                return await self._generate_claude(
+                    messages=messages,
+                    system_prompt=system_prompt,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    tools=tools,
+                    user_id=user_id,
+                    db=db
+                )
+
+            # 提取文本内容
+            content = ""
+            for block in response.content:
+                if block.type == "text":
+                    content += block.text
+
             tokens_used = response.usage.input_tokens + response.usage.output_tokens if response.usage else None
 
             return content, tokens_used

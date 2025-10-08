@@ -8,6 +8,7 @@ import type {
   SendMessageRequest,
   SendMessageResponse,
   Conversation,
+  ConversationListResponse,
   Message,
   CreateConversationRequest,
 } from "./types";
@@ -35,8 +36,14 @@ export const createConversation = async (
 
 // ========== 获取所有对话列表 ==========
 
-export const getConversations = async (): Promise<Conversation[]> => {
-  const response = await apiClient.get<Conversation[]>("/chat/conversations");
+export const getConversations = async (
+  page: number = 1,
+  pageSize: number = 20
+): Promise<ConversationListResponse> => {
+  const response = await apiClient.get<ConversationListResponse>(
+    "/chat/conversations",
+    { params: { page, page_size: pageSize } }
+  );
   return response.data;
 };
 

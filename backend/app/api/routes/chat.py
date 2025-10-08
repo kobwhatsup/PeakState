@@ -4,6 +4,7 @@
 """
 
 import time
+from datetime import datetime
 from typing import Annotated, List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -22,9 +23,10 @@ from app.schemas.chat import (
 from app.crud import conversation as conversation_crud
 from app.ai.orchestrator import AIOrchestrator
 from app.ai.prompts import build_system_prompt
+from app.services.health_analytics import get_user_health_summary
 
 
-router = APIRouter()
+router = APIRouter(prefix="/chat", tags=["AI对话"])
 
 
 # ============ 依赖注入 ============
@@ -109,24 +111,21 @@ async def send_message(
             max_messages=10  # 最多包含最近10条消息
         )
 
-    # 4. 构建用户画像和健康数据(TODO: 从数据库获取真实数据)
+    # 4. 构建用户画像 (从User模型获取真实数据)
+    days_active = (datetime.utcnow() - current_user.created_at).days
     user_profile = {
-        "age": 35,  # TODO: 从User表获取
-        "gender": "未知",
-        "occupation": "未知",
-        "timezone": "Asia/Shanghai",
-        "days_active": (current_user.created_at - current_user.created_at).days
+        "age": current_user.age or "未提供",
+        "gender": current_user.gender or "未提供",
+        "occupation": current_user.occupation or "未提供",
+        "health_goals": current_user.health_goals or "未设置",
+        "timezone": current_user.timezone,
+        "days_active": days_active
     }
 
-    health_data = {
-        # TODO: 从HealthData表聚合最近7天数据
-        "sleep_avg": 7.2,
-        "hrv_avg": 55.0,
-        "steps_avg": 8500,
-        "stress_level": "中等"
-    }
+    # 5. 聚合健康数据 (从HealthData表统计最近7天)
+    health_data = await get_user_health_summary(db, current_user.id, days=7)
 
-    # 5. 构建系统提示词
+    # 6. 构建系统提示词
     system_prompt = build_system_prompt(
         coach_type=current_user.coach_selection,
         scenario="general",
@@ -134,13 +133,97 @@ async def send_message(
         health_data=health_data
     )
 
-    # 6. AI路由决策和生成回复
+    # 6.5 检查缓存 (三层缓存架构)
+    from app.ai.response_cache import get_response_cache_manager
+
+    cache_manager = await get_response_cache_manager()
+    cache_result = await cache_manager.get_cached_response(
+        query=request.message,
+        user_id=str(current_user.id),
+        conversation_history=conversation_history,
+        similarity_threshold=0.92
+    )
+
+    if cache_result:
+        # 缓存命中！
+        cache_entry, cache_layer = cache_result
+
+        logger.info(
+            f"✅ CACHE HIT ({cache_layer}) | "
+            f"Query: {request.message[:30]}... | "
+            f"Saved tokens: {cache_entry.tokens_used} | "
+            f"Provider: {cache_entry.provider}"
+        )
+
+        # 保存用户消息到会话
+        await conversation_crud.add_message_to_conversation(
+            db=db,
+            conversation_id=conversation.id,
+            user_id=current_user.id,
+            role="user",
+            content=request.message
+        )
+
+        # 保存AI回复到会话
+        await conversation_crud.add_message_to_conversation(
+            db=db,
+            conversation_id=conversation.id,
+            user_id=current_user.id,
+            role="assistant",
+            content=cache_entry.response,
+            metadata={
+                "provider": cache_entry.provider,
+                "complexity": cache_entry.complexity,
+                "intent": cache_entry.intent,
+                "tokens": cache_entry.tokens_used,
+                "from_cache": True,
+                "cache_layer": cache_layer
+            }
+        )
+
+        # 更新会话信息
+        await conversation_crud.update_conversation_ai_provider(
+            db=db,
+            conversation_id=conversation.id,
+            ai_provider=cache_entry.provider,
+            tokens_used=cache_entry.tokens_used
+        )
+
+        # 计算响应时间（极快）
+        response_time_ms = int((time.time() - start_time) * 1000)
+
+        # 返回缓存响应
+        return ChatResponse(
+            conversation_id=conversation.id,
+            message=cache_entry.response,
+            intent=cache_entry.intent,
+            complexity_score=cache_entry.complexity,
+            ai_provider=cache_entry.provider,
+            tokens_used=cache_entry.tokens_used,
+            response_time_ms=response_time_ms,
+            timestamp=datetime.utcnow(),
+            from_cache=True,
+            cache_layer=cache_layer
+        )
+
+    # 缓存未命中，继续正常流程
+    logger.debug(f"❌ Cache miss, calling AI model...")
+
+    # 7. AI路由决策和生成回复
     try:
         routing_decision = await ai_orchestrator.route_request(
             user_message=request.message,
             conversation_history=conversation_history,
-            user_profile=user_profile
+            user_profile=user_profile,
+            user_id=str(current_user.id)
         )
+
+        # 8. 获取MCP工具 (仅Claude使用)
+        tools = None
+        if routing_decision.provider == ai_orchestrator.AIProvider.CLAUDE_SONNET_4:
+            from app.mcp import get_health_tools_schema
+            tools = get_health_tools_schema()
+            logger.info(f"🔧 MCP tools enabled: {len(tools)} tools")
 
         # 调用选定的AI提供商生成回复
         ai_response = await ai_orchestrator.generate_response(
@@ -148,6 +231,9 @@ async def send_message(
             system_prompt=system_prompt,
             user_message=request.message,
             conversation_history=conversation_history,
+            tools=tools,  # 传递MCP工具
+            user_id=current_user.id,  # 传递用户ID
+            db=db  # 传递数据库会话
             max_tokens=2000,
             temperature=0.7
         )
@@ -159,7 +245,7 @@ async def send_message(
             detail=f"AI service error: {str(e)}"
         )
 
-    # 7. 保存AI回复到会话
+    # 8. 保存AI回复到会话
     await conversation_crud.add_message_to_conversation(
         db=db,
         conversation_id=conversation.id,
@@ -174,7 +260,7 @@ async def send_message(
         }
     )
 
-    # 8. 更新会话AI提供商信息
+    # 9. 更新会话AI提供商信息
     await conversation_crud.update_conversation_ai_provider(
         db=db,
         conversation_id=conversation.id,
@@ -182,10 +268,23 @@ async def send_message(
         tokens_used=ai_response.tokens_used
     )
 
+    # 9.5 写入缓存 (异步，不阻塞响应)
+    await cache_manager.set_cache(
+        query=request.message,
+        response=ai_response.content,
+        user_id=str(current_user.id),
+        provider=routing_decision.provider.value,
+        intent=routing_decision.intent.intent.value,
+        complexity=routing_decision.complexity,
+        tokens_used=ai_response.tokens_used,
+        conversation_history=conversation_history,
+        ttl=86400  # 24小时
+    )
+
     # 计算响应时间
     response_time_ms = int((time.time() - start_time) * 1000)
 
-    # 9. 返回响应
+    # 10. 返回响应
     return ChatResponse(
         conversation_id=conversation.id,
         message=ai_response.content,

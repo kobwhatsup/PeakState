@@ -83,6 +83,14 @@ class Settings(BaseSettings):
     AI_ROUTE_MINI_THRESHOLD: int = Field(default=6, ge=0, le=10)
     AI_COST_OPTIMIZATION: bool = True
 
+    # ============ 响应缓存配置 ============
+    CACHE_ENABLED: bool = True
+    CACHE_L1_TTL: int = 86400  # L1 Redis缓存24小时
+    CACHE_L2_TTL: int = 604800  # L2 Qdrant缓存7天
+    CACHE_L3_TTL: int = 0  # L3 知识库永久缓存
+    CACHE_SIMILARITY_THRESHOLD: float = Field(default=0.92, ge=0.0, le=1.0)  # L2语义相似度阈值
+    CACHE_MIN_COMPLEXITY: int = Field(default=3, ge=1, le=10)  # 最低缓存复杂度
+
     # ============ 安全配置 ============
     JWT_SECRET_KEY: str = Field(
         default="dev_secret_key_change_in_production_min_32_chars",
@@ -123,6 +131,14 @@ class Settings(BaseSettings):
     APPLE_SHARED_SECRET: Optional[str] = None
     APPLE_BUNDLE_ID: str = "com.peakstate.app"
     GOOGLE_PLAY_BILLING_KEY: Optional[str] = None
+
+    # 天气API配置
+    WEATHER_API_KEY: str = Field(default="", description="天气API密钥")
+    WEATHER_PROVIDER: str = Field(
+        default="openweather",
+        pattern="^(openweather|qweather)$",
+        description="天气服务提供商: openweather(OpenWeather) 或 qweather(和风天气)"
+    )
 
     # ============ 业务配置 ============
     SUBSCRIPTION_PRICE_MONTHLY: int = 30000  # 300元(分)

@@ -17,6 +17,8 @@ from app.core.database import Base
 if TYPE_CHECKING:
     from app.models.conversation import Conversation
     from app.models.health_data import HealthData
+    from app.models.ai_metrics import AIRequestMetrics
+    from app.models.energy import EnergyPrediction, EnergyBaseline, EnergyPattern
 
 
 class CoachType(str, Enum):
@@ -66,6 +68,27 @@ class User(Base):
         default="Asia/Shanghai",
         nullable=False,
         comment="用户时区"
+    )
+
+    # 用户画像 (新增字段用于AI个性化)
+    age: Mapped[int | None] = mapped_column(
+        nullable=True,
+        comment="年龄"
+    )
+    gender: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        comment="性别(male/female/other/prefer_not_to_say)"
+    )
+    occupation: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="职业"
+    )
+    health_goals: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+        comment="健康目标(逗号分隔,如: improve_sleep,reduce_stress,increase_energy)"
     )
 
     # 订阅状态
@@ -176,6 +199,37 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="noload"  # 不自动加载，避免模型不一致问题
+    )
+    ai_metrics: Mapped[List["AIRequestMetrics"]] = relationship(
+        "AIRequestMetrics",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="noload"
+    )
+    energy_predictions: Mapped[List["EnergyPrediction"]] = relationship(
+        "EnergyPrediction",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="noload"
+    )
+    energy_baseline: Mapped["EnergyBaseline"] = relationship(
+        "EnergyBaseline",
+        back_populates="user",
+        uselist=False,  # 一对一关系
+        cascade="all, delete-orphan",
+        lazy="noload"
+    )
+    energy_patterns: Mapped[List["EnergyPattern"]] = relationship(
+        "EnergyPattern",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="noload"
+    )
+    environment_data: Mapped[List["EnvironmentData"]] = relationship(
+        "EnvironmentData",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="noload"
     )
 
     def __repr__(self) -> str:

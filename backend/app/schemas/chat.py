@@ -51,6 +51,8 @@ class ChatResponse(BaseModel):
     tokens_used: Optional[int] = Field(None, description="消耗的token数")
     response_time_ms: int = Field(..., description="响应时间(毫秒)")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="响应时间戳")
+    from_cache: bool = Field(False, description="是否来自缓存")
+    cache_layer: Optional[str] = Field(None, description="缓存层级: L1 | L2 | L3")
 
     class Config:
         from_attributes = True
@@ -63,7 +65,9 @@ class ChatResponse(BaseModel):
                 "intent": "energy_management",
                 "tokens_used": 150,
                 "response_time_ms": 85,
-                "timestamp": "2025-01-15T10:30:00Z"
+                "timestamp": "2025-01-15T10:30:00Z",
+                "from_cache": False,
+                "cache_layer": None
             }
         }
 

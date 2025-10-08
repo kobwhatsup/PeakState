@@ -158,7 +158,16 @@ export const useChatStore = create<ChatState>()(
       loadConversations: async () => {
         set({ isLoading: true, error: null });
         try {
-          const conversations = await apiGetConversations();
+          const response = await apiGetConversations();
+          // 将ConversationListItem转换为Conversation格式
+          const conversations: Conversation[] = response.conversations.map(item => ({
+            id: item.conversation_id,
+            title: item.title || "新对话",
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            message_count: item.message_count,
+            last_message_at: item.updated_at
+          }));
           set({ conversations });
         } catch (error: any) {
           console.error("Load conversations error:", error);

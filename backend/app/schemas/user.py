@@ -25,8 +25,8 @@ class UserRegister(BaseModel):
         description="密码(6-50位)"
     )
     coach_selection: str = Field(
-        default="coach",
-        description="AI教练类型(mentor/coach/doctor/zen)"
+        default="companion",
+        description="AI教练类型(sage/companion/expert)"
     )
 
     @field_validator("phone_number")
@@ -41,7 +41,7 @@ class UserRegister(BaseModel):
     @classmethod
     def validate_coach_type(cls, v: str) -> str:
         """验证教练类型"""
-        valid_types = ["sage", "companion", "expert", "mentor", "coach", "doctor", "zen"]
+        valid_types = ["sage", "companion", "expert"]
         if v not in valid_types:
             raise ValueError(f"教练类型必须是以下之一: {', '.join(valid_types)}")
         return v
@@ -57,6 +57,14 @@ class UserUpdate(BaseModel):
     """用户信息更新"""
     coach_selection: Optional[str] = Field(None, description="AI教练类型")
     timezone: Optional[str] = Field(None, description="时区")
+
+    # 用户画像
+    age: Optional[int] = Field(None, ge=1, le=150, description="年龄")
+    gender: Optional[str] = Field(None, description="性别")
+    occupation: Optional[str] = Field(None, description="职业")
+    health_goals: Optional[str] = Field(None, description="健康目标")
+
+    # 用户偏好
     morning_briefing_enabled: Optional[bool] = Field(None, description="是否启用早报")
     morning_briefing_time: Optional[str] = Field(None, description="早报时间(HH:MM)")
     evening_review_enabled: Optional[bool] = Field(None, description="是否启用晚间复盘")
@@ -79,6 +87,12 @@ class UserResponse(BaseModel):
     phone_number: str = Field(..., description="手机号")
     coach_selection: str = Field(..., description="AI教练类型")
     timezone: str = Field(..., description="时区")
+
+    # 用户画像
+    age: Optional[int] = Field(None, description="年龄")
+    gender: Optional[str] = Field(None, description="性别")
+    occupation: Optional[str] = Field(None, description="职业")
+    health_goals: Optional[str] = Field(None, description="健康目标")
 
     # 订阅状态
     is_subscribed: bool = Field(..., description="是否已订阅")

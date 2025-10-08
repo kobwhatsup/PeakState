@@ -7,6 +7,7 @@ import { apiClient, tokenStorage } from "./client";
 import type {
   RegisterRequest,
   LoginRequest,
+  UpdateUserRequest,
   Token,
   User,
 } from "./types";
@@ -75,6 +76,13 @@ export const refreshToken = async (refresh_token: string): Promise<Token> => {
     );
   }
 
+  return response.data;
+};
+
+// ========== 更新用户信息 ==========
+
+export const updateUser = async (data: UpdateUserRequest): Promise<User> => {
+  const response = await apiClient.put<User>("/auth/me", data);
   return response.data;
 };
 

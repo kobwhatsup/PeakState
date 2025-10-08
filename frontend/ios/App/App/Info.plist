@@ -45,5 +45,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>PeakState需要获取您的位置信息，以便为您提供精准的天气数据和精力预测服务。您的位置数据将被安全保护，仅用于改善您的使用体验。</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>PeakState需要获取您的位置信息，以便为您提供精准的天气数据和精力预测服务。您的位置数据将被安全保护，仅用于改善您的使用体验。</string>
 </dict>
 </plist>
